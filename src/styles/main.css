@@ -389,6 +389,8 @@ canvas:active { cursor: grabbing; }
 }
 .scanner-card h3 { margin: 0 0 8px; font: 400 22px var(--serif); color: var(--ink); }
 .scanner-card p { margin: 8px 0 14px; font-size: 14px; }
+.photo-card input[type=file] { margin: 8px 0 12px; color: var(--ink); font-size: 14px; }
+.room-photo-preview { display: block; max-width: 100%; max-height: 260px; border-radius: 10px; margin: 6px 0 10px; border: 1px solid var(--line); }
 .scanner-status { font-size: 13px !important; color: var(--accent) !important; font-family: var(--mono); }
 
 .actions {

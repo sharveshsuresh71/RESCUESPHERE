@@ -33,28 +33,11 @@ a{color:inherit}
 .skip:focus{left:12px}
 
 /* background: midnight wash with soft light glows behind the fixed 3D canvas */
-.wash{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:
-  radial-gradient(ellipse 58% 52% at 68% 38%,rgba(176,122,156,.30) 0%,rgba(176,122,156,0) 70%),
-  radial-gradient(ellipse 46% 48% at 14% 86%,rgba(92,112,230,.24) 0%,rgba(92,112,230,0) 70%),
-  radial-gradient(ellipse 30% 34% at 92% 8%,rgba(63,211,192,.13) 0%,rgba(63,211,192,0) 70%),
-  radial-gradient(ellipse 40% 40% at 40% 110%,rgba(124,92,240,.20) 0%,rgba(124,92,240,0) 70%),
-  linear-gradient(162deg,#1b1523 0%,#16142f 46%,#0e1030 100%)}
-/* soft haze: large blurred light blobs drifting behind the content */
-.wash::before{content:"";position:absolute;inset:-10%;filter:blur(70px);opacity:.55;
-  background:radial-gradient(circle at 30% 30%,rgba(255,190,210,.16) 0,rgba(255,190,210,0) 22%),radial-gradient(circle at 75% 65%,rgba(150,170,255,.18) 0,rgba(150,170,255,0) 24%);
-  animation:haze 26s ease-in-out infinite alternate}
-@keyframes haze{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(3%,-2%,0) scale(1.06)}}
-/* fine perspective grid, faded toward the edges */
-.wash::after{content:"";position:absolute;inset:0;opacity:.7;
-  background-image:linear-gradient(rgba(238,241,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(238,241,255,.035) 1px,transparent 1px);
-  background-size:72px 72px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 60% 40%,#000 15%,transparent 80%);mask-image:radial-gradient(ellipse 70% 60% at 60% 40%,#000 15%,transparent 80%)}
-/* oversized outlined wordmark behind the hero */
-.wm{position:absolute;left:-2vw;top:14%;z-index:0;pointer-events:none;white-space:nowrap;user-select:none;
-  font-family:var(--serif);font-size:15.5vw;line-height:1;letter-spacing:.02em;color:transparent;
-  -webkit-text-stroke:1px rgba(238,241,255,.10);text-transform:uppercase}
-@media (max-width:760px){.wm{font-size:19vw;top:10%}}
+.wash{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(ellipse 60% 55% at 72% 46%,rgba(60,40,110,.35) 0%,rgba(60,40,110,0) 70%),
+  linear-gradient(180deg,#02030a 0%,#05061a 100%)}
 #gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block}
-#bgfx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+#space{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
 
 /* header */
 header.top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 48px;background:rgba(12,15,38,.72);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
@@ -236,7 +219,6 @@ footer.foot .made span{color:var(--muted)}
   .cta .btns{flex-wrap:wrap}
   footer.foot{padding:44px 18px 120px}
 }
-#snow{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 /* no WebGL: the chapters and cards still work */
 body.nogl #gl{display:none}
 </style>
@@ -244,9 +226,9 @@ body.nogl #gl{display:none}
 <body>
 <a class="skip" href="#how">Skip to the overview</a>
 <div class="wash" aria-hidden="true"></div>
-<canvas id="bgfx" aria-hidden="true"></canvas>
+<canvas id="space" aria-hidden="true"></canvas>
 <canvas id="gl" aria-hidden="true"></canvas>
-<canvas id="snow" aria-hidden="true"></canvas>
+
 
 <header class="top" id="top-bar">
   <a class="logo" href="#top" aria-label="RescueSphere home"><span class="mark" aria-hidden="true">R</span><span>Rescue<em>Sphere</em></span></a>
@@ -1233,193 +1215,100 @@ if(typeof THREE!=='undefined'){
 })();
 </script>
 <script>
-/* Living background: aurora ribbons that sway, bokeh rising through the haze, and a light beam
-   that sweeps across. Drawn on its own canvas behind the content; still under reduced motion. */
+/*SPACE*/
+</script>
+<script>
+/* Space scene: a starfield drifting past, and a black hole with a glowing accretion disk,
+   gravitational photon ring and lensed halo. Fixed behind the content; still under reduced motion. */
 (function(){
-  const cv=document.getElementById('bgfx'); if(!cv) return;
+  const cv=document.getElementById('space'); if(!cv) return;
   const g=cv.getContext('2d');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const dpr=Math.min(devicePixelRatio||1,1.5);
-  let w,h,bokeh=[];
-  const RIB=[
-    {c:'124,92,240',base:.34,amp:.09,f:1.6,s:.18,ph:0,a:.22},
-    {c:'63,211,192',base:.46,amp:.07,f:2.1,s:-.24,ph:2.1,a:.12},
-    {c:'255,140,170',base:.28,amp:.06,f:1.2,s:.13,ph:4.2,a:.14},
-    {c:'110,140,255',base:.6,amp:.05,f:2.6,s:.21,ph:1.1,a:.10}
-  ];
-  const SPR=['255,200,220','160,190,255','150,240,235'].map(c=>{
-    const s=document.createElement('canvas'); s.width=s.height=64; const x=s.getContext('2d');
-    const gr=x.createRadialGradient(32,32,0,32,32,32);
-    gr.addColorStop(0,'rgba('+c+',.9)'); gr.addColorStop(.35,'rgba('+c+',.3)'); gr.addColorStop(1,'rgba('+c+',0)');
-    x.fillStyle=gr; x.fillRect(0,0,64,64); return s;
-  });
+  let w,h,stars=[],disk=[];
+  const TAU=Math.PI*2;
   function size(){
     w=innerWidth; h=innerHeight;
     cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
     g.setTransform(dpr,0,0,dpr,0,0);
-    bokeh=Array.from({length:Math.round(Math.min(48,Math.max(18,w*h/40000)))},()=>mk(true));
+    stars=Array.from({length:Math.round(Math.min(520,Math.max(160,w*h/2600)))},()=>({
+      x:Math.random(), y:Math.random(), z:Math.random(), tw:Math.random()*TAU,
+      c:Math.random()<.15?'255,214,170':(Math.random()<.2?'170,200,255':'235,240,255')
+    }));
+    disk=Array.from({length:1100},()=>{
+      const r=Math.pow(Math.random(),.6);           // more particles near the inner edge
+      return {r, a:Math.random()*TAU, s:(.5+Math.random()*.5), h:Math.random()};
+    });
   }
-  function mk(anywhere){
-    const z=Math.random();
-    return {x:Math.random()*w, y:anywhere?Math.random()*h:h+30, r:14+z*46, v:6+z*16,
-      sw:Math.random()*6.28, sa:.4+Math.random()*1.2, c:Math.floor(Math.random()*SPR.length), a:.25+z*.35};
+  function hole(){
+    return {cx:w>900?w*.7:w*.5, cy:h*.46, R:Math.min(w,h)*(w>900?.13:.1)};
+  }
+  function drawStars(t){
+    for(const s of stars){
+      const d=.15+s.z*.85;
+      const x=((s.x - t*.004*d)%1+1)%1*w, y=s.y*h;
+      const tw=.55+.45*Math.sin(t*1.3+s.tw);
+      g.fillStyle='rgba('+s.c+','+(tw*d*.95).toFixed(3)+')';
+      const r=.35+d*.9;
+      g.fillRect(x,y,r,r);
+    }
+  }
+  function drawDisk(H,t,front){
+    const {cx,cy,R}=H;
+    for(const p of disk){
+      const ang=p.a;
+      const isFront=Math.sin(ang)>0;
+      if(isFront!==front) continue;
+      const rr=R*(1.25+p.r*2.2);
+      // inner particles orbit faster
+      const spd=(.9/Math.pow(p.r*2.2+.6,1.5))*p.s;
+      p.a+=spd*.012;
+      const x=cx+Math.cos(p.a)*rr, y=cy+Math.sin(p.a)*rr*.26;
+      // Doppler: the side moving toward us is brighter
+      const dop=.45+.55*(.5-.5*Math.cos(p.a));
+      const warm=p.r<.5;
+      const col=warm?'255,190,120':'255,140,90';
+      g.fillStyle='rgba('+col+','+(dop*(1-p.r*.6)*.85).toFixed(3)+')';
+      const sz=.7+(1-p.r)*1.1;
+      g.fillRect(x,y,sz,sz);
+    }
   }
   function frame(now){
     if(!reduce) requestAnimationFrame(frame);
-    const t=now/1000;
+    const t=reduce?0:now/1000;
     g.clearRect(0,0,w,h);
-    g.globalCompositeOperation='lighter';
+    drawStars(t);
+    const H=hole(), {cx,cy,R}=H;
 
-    /* aurora ribbons */
-    for(const R of RIB){
-      const grad=g.createLinearGradient(0,h*R.base-h*.25,0,h*R.base+h*.3);
-      grad.addColorStop(0,'rgba('+R.c+',0)');
-      grad.addColorStop(.5,'rgba('+R.c+','+R.a+')');
-      grad.addColorStop(1,'rgba('+R.c+',0)');
-      g.fillStyle=grad;
-      g.beginPath();
-      const steps=Math.ceil(w/24);
-      for(let i=0;i<=steps;i++){
-        const x=i*24;
-        const y=h*R.base+Math.sin(x/w*Math.PI*R.f+t*R.s+R.ph)*h*R.amp+Math.sin(x/w*7+t*R.s*2)*h*.012;
-        i?g.lineTo(x,y):g.moveTo(x,y);
-      }
-      g.lineTo(w,h); g.lineTo(0,h); g.closePath(); g.fill();
-    }
+    /* soft warm glow of the disk plane */
+    const glow=g.createRadialGradient(cx,cy,R*.9,cx,cy,R*3.2);
+    glow.addColorStop(0,'rgba(255,150,90,.20)'); glow.addColorStop(.35,'rgba(255,110,70,.07)'); glow.addColorStop(1,'rgba(255,110,70,0)');
+    g.fillStyle=glow; g.fillRect(cx-R*3.2,cy-R*3.2,R*6.4,R*6.4);
 
-    /* light beam sweeping diagonally */
-    const bx=((t*.035)%1.5-.25)*w;
-    const beam=g.createLinearGradient(bx-w*.18,0,bx+w*.18,h);
-    beam.addColorStop(0,'rgba(143,246,255,0)'); beam.addColorStop(.5,'rgba(143,246,255,.045)'); beam.addColorStop(1,'rgba(143,246,255,0)');
-    g.fillStyle=beam; g.fillRect(0,0,w,h);
+    drawDisk(H,t,false);                       // back of the disk, behind the hole
 
-    /* bokeh rising and swaying */
-    for(const b of bokeh){
-      if(!reduce){
-        b.sw+=0.01*b.sa; b.y-=b.v*(1/60); b.x+=Math.sin(b.sw)*.35;
-        if(b.y<-b.r*2){ Object.assign(b,mk(false)); }
-      }
-      g.globalAlpha=b.a;
-      g.drawImage(SPR[b.c],b.x-b.r,b.y-b.r,b.r*2,b.r*2);
-    }
-    g.globalAlpha=1; g.globalCompositeOperation='source-over';
+    /* event horizon: pure black */
+    g.beginPath(); g.arc(cx,cy,R,0,TAU); g.fillStyle='#000'; g.fill();
+
+    /* photon ring: light bent around the hole */
+    g.save(); g.translate(cx,cy); g.scale(1,.94);
+    g.beginPath(); g.arc(0,0,R*1.06,0,TAU);
+    g.shadowColor='rgba(255,170,110,.9)'; g.shadowBlur=R*.35;
+    g.strokeStyle='rgba(255,226,190,.95)'; g.lineWidth=Math.max(1.5,R*.035); g.stroke();
+    g.shadowBlur=0;
+    g.beginPath(); g.arc(0,0,R*1.22,0,TAU);
+    g.strokeStyle='rgba(120,160,255,.22)'; g.lineWidth=R*.12; g.stroke();
+    g.restore();
+
+    drawDisk(H,t,true);                        // front of the disk, over the hole
+
+    /* lensed halo arc on the top of the hole */
+    g.save(); g.translate(cx,cy); g.rotate(-.2);
+    g.beginPath(); g.ellipse(0,-R*.2,R*1.5,R*1.1,0,Math.PI*1.1,Math.PI*1.9);
+    g.strokeStyle='rgba(255,200,150,.16)'; g.lineWidth=R*.05; g.stroke(); g.restore();
   }
   let rt; addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ size(); if(reduce) frame(0); },120); });
   size(); requestAnimationFrame(frame);
-})();
-</script>
-<script>
-/* Site-wide orb field. Glowing orbs drift when idle, then gather into 3D shapes and
-   break apart again in a staggered morph. 2D canvas, pointer-transparent, behind the content.
-   Off for people with reduced motion (the orbs sit still in a calm field). */
-(function(){
-  const cv=document.getElementById('snow');
-  if(!cv){ return; }
-  const g=cv.getContext('2d');
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const COL=['143,246,255','165,139,255','240,168,74','255,107,116','220,226,255'];
-  const SPR=COL.map(c=>{
-    const s=document.createElement('canvas'); s.width=s.height=64; const x=s.getContext('2d');
-    const gr=x.createRadialGradient(32,32,0,32,32,32);
-    gr.addColorStop(0,'rgba('+c+',1)'); gr.addColorStop(.22,'rgba('+c+',.85)'); gr.addColorStop(1,'rgba('+c+',0)');
-    x.fillStyle=gr; x.fillRect(0,0,64,64); return s;
-  });
-  const GOLD=2.399963;
-  /* 3D shape generators, unit scale, one point per orb */
-  const SHAPES=[
-    (i,N)=>{ const y=1-2*(i+.5)/N, r=Math.sqrt(Math.max(0,1-y*y)), th=GOLD*i; return [Math.cos(th)*r,y,Math.sin(th)*r]; },   // sphere
-    (i,N)=>{ const u=(i*GOLD)%(Math.PI*2), v=(i/N)*Math.PI*2*9, R=.85, r=.32;
-             return [(R+r*Math.cos(v))*Math.cos(u),r*Math.sin(v),(R+r*Math.cos(v))*Math.sin(u)]; },                      // torus
-    (i,N)=>{ const f=i%6, u=((i*.618)%1)*2-1, v=((i*.382+.5)%1)*2-1, s=.85;
-             const P=[[s,u*s,v*s],[-s,u*s,v*s],[u*s,s,v*s],[u*s,-s,v*s],[u*s,v*s,s],[u*s,v*s,-s]][f]; return P; },       // cube
-    (i,N)=>{ const st=i%2, t=(i/N)*Math.PI*2*5; return [Math.cos(t+st*Math.PI)*.62,(i/N)*2.2-1.1,Math.sin(t+st*Math.PI)*.62]; }, // helix
-    (i,N)=>{ const k=Math.ceil(Math.sqrt(N)), gx=i%k, gy=Math.floor(i/k), x=gx/k*2-1, z=gy/k*2-1;
-             return [x*1.1,.22*Math.sin(x*4)*Math.cos(z*4),z*1.1]; }                                                    // wave grid
-  ];
-  let w,h,dpr,N=0,orbs=[],shapes=[],shapeIdx=0,M=0,phase='free',phaseT=0,last=0;
-  const HOLD=3.6, FREE=2.2;
-  function build(){
-    dpr=Math.min(devicePixelRatio||1,2); w=innerWidth; h=innerHeight;
-    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); g.setTransform(dpr,0,0,dpr,0,0);
-    N=Math.round(Math.min(300,Math.max(90,w*h/5200)));
-    orbs=Array.from({length:N},(_,i)=>({
-      hx:Math.random()*w, hy:Math.random()*h, ph:Math.random()*6.28,
-      z:Math.random()*2-1, c:Math.floor(Math.random()*COL.length), s:.55+Math.random()*1.1,
-      d:Math.random()
-    }));
-    shapes=SHAPES.map(fn=>Array.from({length:N},(_,i)=>fn(i,N)));
-  }
-  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-  const ss=u=>u*u*(3-2*u);
-  /* project a shape point: rotate, perspective, and place it around the centre */
-  function project(p,A,S,cx,cy){
-    let x=p[0], y=p[1], z=p[2];
-    const ca=Math.cos(A), sa=Math.sin(A);
-    let x1=x*ca+z*sa, z1=-x*sa+z*ca;
-    const tilt=.35, cb=Math.cos(tilt), sb=Math.sin(tilt);
-    let y1=y*cb-z1*sb, z2=y*sb+z1*cb;
-    const f=3/(3-z2*.9);
-    return [cx+x1*S*f, cy+y1*S*f, z2, f];
-  }
-  function draw(now){
-    if(!reduce) requestAnimationFrame(draw);
-    const dt=reduce?0:Math.min(.05,(now-last)/1000); last=now;
-    const t=now/1000;
-    g.clearRect(0,0,w,h);
-
-    /* phase timeline: drift, morph into the next shape, hold, drift again */
-    if(!reduce){
-      phaseT+=dt;
-      if(phase==='free'&&phaseT>FREE){ phase='morph'; phaseT=0; shapeIdx=(shapeIdx+1)%SHAPES.length; }
-      else if(phase==='morph'&&phaseT>HOLD){ phase='free'; phaseT=0; }
-    }
-    const goal=phase==='morph'?1:0;
-    M+=(goal-M)*(1-Math.exp(-dt*(phase==='morph'?3.2:2.4)));
-    const flash=Math.sin(Math.PI*clamp(M,0,1))*.8;   // energy spike mid-morph
-
-    const cx=w>900?w*.7:w*.5, cy=h*.5, S=Math.min(w,h)*.24;
-    const A=t*.35, shape=shapes[shapeIdx]||shapes[0];
-
-    /* connections: neighbours in the shape form a glowing wireframe, strongest mid-morph */
-    const pts=new Array(N);
-    for(let i=0;i<N;i++){
-      const o=orbs[i];
-      const hx=o.hx+Math.sin(t*.3+o.ph)*38, hy=o.hy+Math.cos(t*.26+o.ph)*30;
-      const mo=ss(clamp((M-o.d*.35)/.65,0,1));
-      const sp=project(shape[i],A,S,cx,cy);
-      pts[i]={x:hx*(1-mo)+sp[0]*mo, y:hy*(1-mo)+sp[1]*mo, z:o.z*(1-mo)+sp[2]*mo, f:1*(1-mo)+sp[3]*mo, mo};
-    }
-    const lineA=.05+.18*M+.12*flash;
-    if(M>.02){
-      g.lineWidth=1;
-      g.strokeStyle='rgba(143,246,255,'+lineA.toFixed(3)+')';
-      g.beginPath();
-      for(let i=0;i<N;i++){
-        const p=pts[i];
-        for(const j of [i+1,i+7]){
-          if(j>=N) continue;
-          const q=pts[j]; if(p.mo<.5||q.mo<.5) continue;
-          g.moveTo(p.x,p.y); g.lineTo(q.x,q.y);
-        }
-      }
-      g.stroke();
-    }
-
-    /* orbs: depth sets size and brightness; each one twinkles on its own rhythm */
-    for(let i=0;i<N;i++){
-      const o=orbs[i], p=pts[i];
-      const depth=clamp((p.z+1.2)/2.4,0,1);
-      const tw=.75+.25*Math.sin(t*2+o.ph);
-      const r=(3+4*depth)*o.s*(1+.35*flash*p.mo);
-      g.globalAlpha=clamp((.35+.55*depth)*tw+.25*flash*p.mo,0,1);
-      g.drawImage(SPR[o.c],p.x-r,p.y-r,r*2,r*2);
-    }
-    g.globalAlpha=1;
-  }
-  let resizeT;
-  addEventListener('resize',()=>{ clearTimeout(resizeT); resizeT=setTimeout(()=>{ build(); if(reduce) draw(performance.now()); },120); });
-  build(); last=performance.now();
-  requestAnimationFrame(draw);
 })();
 </script>
 </body>

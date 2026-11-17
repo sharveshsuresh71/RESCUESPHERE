@@ -146,8 +146,47 @@ export class RoomSetupModule implements ExperienceModule {
       this.state.show('roomSetup');
     }, 'danger');
 
+    /* Room photo: a second way to start. The photo is kept only in this tab, never uploaded. */
+    let photoUrl: string | null = null;
+    const photoPanel = document.createElement('div');
+    photoPanel.className = 'scanner-card photo-card';
+    const photoTitle = document.createElement('h3');
+    photoTitle.textContent = '📷 Room photo';
+    const photoDescription = createParagraph('Upload a photo of your room for reference. It stays in this browser tab and is not uploaded anywhere. Enter the dimensions yourself below.');
+    const photoStatus = document.createElement('p');
+    photoStatus.className = 'scanner-status';
+    photoStatus.setAttribute('role', 'status');
+    photoStatus.textContent = 'No photo yet.';
+    const photoInput = document.createElement('input');
+    photoInput.type = 'file';
+    photoInput.accept = 'image/*';
+    photoInput.setAttribute('aria-label', 'Choose a photo of your room');
+    const photoPreview = document.createElement('img');
+    photoPreview.className = 'room-photo-preview';
+    photoPreview.alt = 'Your uploaded room photo';
+    photoPreview.hidden = true;
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        photoStatus.textContent = 'That file is not an image. Please choose a JPG, PNG, or WebP photo.';
+        return;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        photoStatus.textContent = 'That photo is larger than 15 MB. Please choose a smaller one.';
+        return;
+      }
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      photoUrl = URL.createObjectURL(file);
+      photoPreview.src = photoUrl;
+      photoPreview.hidden = false;
+      photoStatus.textContent = `Okay. Photo received (${file.name}). Now enter the room width and length below.`;
+    });
+    photoPanel.append(photoTitle, photoDescription, photoInput, photoPreview, photoStatus);
+
     panel.append(
       scanPanel,
+      photoPanel,
       createField('Room template', template),
       createField('Room width in meters', width),
       createField('Room length in meters', length),
