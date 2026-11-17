@@ -33,11 +33,26 @@ a{color:inherit}
 .skip:focus{left:12px}
 
 /* background: midnight wash with soft light glows behind the fixed 3D canvas */
-.wash{position:fixed;inset:0;z-index:0;pointer-events:none;background:
-  radial-gradient(ellipse 55% 50% at 72% 42%,rgba(124,92,240,.28) 0%,rgba(124,92,240,0) 70%),
-  radial-gradient(ellipse 40% 42% at 18% 84%,rgba(61,90,254,.20) 0%,rgba(61,90,254,0) 70%),
-  radial-gradient(ellipse 30% 30% at 88% 10%,rgba(63,211,192,.10) 0%,rgba(63,211,192,0) 70%),
-  linear-gradient(180deg,#0c0f26 0%,#131a44 100%)}
+.wash{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:
+  radial-gradient(ellipse 58% 52% at 68% 38%,rgba(176,122,156,.30) 0%,rgba(176,122,156,0) 70%),
+  radial-gradient(ellipse 46% 48% at 14% 86%,rgba(92,112,230,.24) 0%,rgba(92,112,230,0) 70%),
+  radial-gradient(ellipse 30% 34% at 92% 8%,rgba(63,211,192,.13) 0%,rgba(63,211,192,0) 70%),
+  radial-gradient(ellipse 40% 40% at 40% 110%,rgba(124,92,240,.20) 0%,rgba(124,92,240,0) 70%),
+  linear-gradient(162deg,#1b1523 0%,#16142f 46%,#0e1030 100%)}
+/* soft haze: large blurred light blobs drifting behind the content */
+.wash::before{content:"";position:absolute;inset:-10%;filter:blur(70px);opacity:.55;
+  background:radial-gradient(circle at 30% 30%,rgba(255,190,210,.16) 0,rgba(255,190,210,0) 22%),radial-gradient(circle at 75% 65%,rgba(150,170,255,.18) 0,rgba(150,170,255,0) 24%);
+  animation:haze 26s ease-in-out infinite alternate}
+@keyframes haze{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(3%,-2%,0) scale(1.06)}}
+/* fine perspective grid, faded toward the edges */
+.wash::after{content:"";position:absolute;inset:0;opacity:.7;
+  background-image:linear-gradient(rgba(238,241,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(238,241,255,.035) 1px,transparent 1px);
+  background-size:72px 72px;-webkit-mask-image:radial-gradient(ellipse 70% 60% at 60% 40%,#000 15%,transparent 80%);mask-image:radial-gradient(ellipse 70% 60% at 60% 40%,#000 15%,transparent 80%)}
+/* oversized outlined wordmark behind the hero */
+.wm{position:absolute;left:-2vw;top:14%;z-index:0;pointer-events:none;white-space:nowrap;user-select:none;
+  font-family:var(--serif);font-size:15.5vw;line-height:1;letter-spacing:.02em;color:transparent;
+  -webkit-text-stroke:1px rgba(238,241,255,.10);text-transform:uppercase}
+@media (max-width:760px){.wm{font-size:19vw;top:10%}}
 #gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block}
 
 /* header */
@@ -253,6 +268,7 @@ body.nogl #gl{display:none}
 
 <main id="main">
   <section class="hero" id="top-hero" aria-labelledby="hero-title">
+    <div class="wm" aria-hidden="true">RescueSphere</div>
     <div class="hero-box">
       <div class="kicker">Home preparedness, in 3D</div>
       <h1 id="hero-title">See your space.<br><em>Plan your escape.</em></h1>
