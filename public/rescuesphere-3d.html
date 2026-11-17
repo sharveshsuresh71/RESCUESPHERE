@@ -54,6 +54,7 @@ a{color:inherit}
   -webkit-text-stroke:1px rgba(238,241,255,.10);text-transform:uppercase}
 @media (max-width:760px){.wm{font-size:19vw;top:10%}}
 #gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block}
+#bgfx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
 
 /* header */
 header.top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 48px;background:rgba(12,15,38,.72);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
@@ -243,6 +244,7 @@ body.nogl #gl{display:none}
 <body>
 <a class="skip" href="#how">Skip to the overview</a>
 <div class="wash" aria-hidden="true"></div>
+<canvas id="bgfx" aria-hidden="true"></canvas>
 <canvas id="gl" aria-hidden="true"></canvas>
 <canvas id="snow" aria-hidden="true"></canvas>
 
@@ -1227,6 +1229,82 @@ if(typeof THREE!=='undefined'){
     }
   }
   addEventListener('resize',()=>{ size(); if(reduce) frame(0); });
+  size(); requestAnimationFrame(frame);
+})();
+</script>
+<script>
+/* Living background: aurora ribbons that sway, bokeh rising through the haze, and a light beam
+   that sweeps across. Drawn on its own canvas behind the content; still under reduced motion. */
+(function(){
+  const cv=document.getElementById('bgfx'); if(!cv) return;
+  const g=cv.getContext('2d');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const dpr=Math.min(devicePixelRatio||1,1.5);
+  let w,h,bokeh=[];
+  const RIB=[
+    {c:'124,92,240',base:.34,amp:.09,f:1.6,s:.18,ph:0,a:.22},
+    {c:'63,211,192',base:.46,amp:.07,f:2.1,s:-.24,ph:2.1,a:.12},
+    {c:'255,140,170',base:.28,amp:.06,f:1.2,s:.13,ph:4.2,a:.14},
+    {c:'110,140,255',base:.6,amp:.05,f:2.6,s:.21,ph:1.1,a:.10}
+  ];
+  const SPR=['255,200,220','160,190,255','150,240,235'].map(c=>{
+    const s=document.createElement('canvas'); s.width=s.height=64; const x=s.getContext('2d');
+    const gr=x.createRadialGradient(32,32,0,32,32,32);
+    gr.addColorStop(0,'rgba('+c+',.9)'); gr.addColorStop(.35,'rgba('+c+',.3)'); gr.addColorStop(1,'rgba('+c+',0)');
+    x.fillStyle=gr; x.fillRect(0,0,64,64); return s;
+  });
+  function size(){
+    w=innerWidth; h=innerHeight;
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+    g.setTransform(dpr,0,0,dpr,0,0);
+    bokeh=Array.from({length:Math.round(Math.min(48,Math.max(18,w*h/40000)))},()=>mk(true));
+  }
+  function mk(anywhere){
+    const z=Math.random();
+    return {x:Math.random()*w, y:anywhere?Math.random()*h:h+30, r:14+z*46, v:6+z*16,
+      sw:Math.random()*6.28, sa:.4+Math.random()*1.2, c:Math.floor(Math.random()*SPR.length), a:.25+z*.35};
+  }
+  function frame(now){
+    if(!reduce) requestAnimationFrame(frame);
+    const t=now/1000;
+    g.clearRect(0,0,w,h);
+    g.globalCompositeOperation='lighter';
+
+    /* aurora ribbons */
+    for(const R of RIB){
+      const grad=g.createLinearGradient(0,h*R.base-h*.25,0,h*R.base+h*.3);
+      grad.addColorStop(0,'rgba('+R.c+',0)');
+      grad.addColorStop(.5,'rgba('+R.c+','+R.a+')');
+      grad.addColorStop(1,'rgba('+R.c+',0)');
+      g.fillStyle=grad;
+      g.beginPath();
+      const steps=Math.ceil(w/24);
+      for(let i=0;i<=steps;i++){
+        const x=i*24;
+        const y=h*R.base+Math.sin(x/w*Math.PI*R.f+t*R.s+R.ph)*h*R.amp+Math.sin(x/w*7+t*R.s*2)*h*.012;
+        i?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      g.lineTo(w,h); g.lineTo(0,h); g.closePath(); g.fill();
+    }
+
+    /* light beam sweeping diagonally */
+    const bx=((t*.035)%1.5-.25)*w;
+    const beam=g.createLinearGradient(bx-w*.18,0,bx+w*.18,h);
+    beam.addColorStop(0,'rgba(143,246,255,0)'); beam.addColorStop(.5,'rgba(143,246,255,.045)'); beam.addColorStop(1,'rgba(143,246,255,0)');
+    g.fillStyle=beam; g.fillRect(0,0,w,h);
+
+    /* bokeh rising and swaying */
+    for(const b of bokeh){
+      if(!reduce){
+        b.sw+=0.01*b.sa; b.y-=b.v*(1/60); b.x+=Math.sin(b.sw)*.35;
+        if(b.y<-b.r*2){ Object.assign(b,mk(false)); }
+      }
+      g.globalAlpha=b.a;
+      g.drawImage(SPR[b.c],b.x-b.r,b.y-b.r,b.r*2,b.r*2);
+    }
+    g.globalAlpha=1; g.globalCompositeOperation='source-over';
+  }
+  let rt; addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ size(); if(reduce) frame(0); },120); });
   size(); requestAnimationFrame(frame);
 })();
 </script>
