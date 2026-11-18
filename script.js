@@ -1,8 +1,10 @@
 /* RescueSphere template script.
-   - Hero: 3D glossy core, petal blades and orbit rings (three.js). Falls back to 2D petals.
-   - Room: 3D room with a glowing escape route; scroll orbits the camera.
-   - Effects: letter split reveals, scroll progress, cursor spotlight, card tilt,
-     magnetic buttons, parallax headings, FAQ accordion, reveal-on-scroll, demo sign-up. */
+   1. One full-page three.js stage. Each section has its own 3D model; the model for the
+      section in view grows in, the others shrink away. Models: glossy core with petal blades,
+      escape-route exit door, interactive 3D room, floating cubes, torus knot, orbit rings,
+      helix path, crystal cluster.
+   2. Effects: letter reveals, scroll progress, cursor spotlight, card tilt, magnetic buttons,
+      parallax headings, FAQ accordion, reveal-on-scroll, demo sign-up. */
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const HAS3D = typeof THREE !== 'undefined';
@@ -10,268 +12,280 @@ const HAS3D = typeof THREE !== 'undefined';
 /* ---------- letter split ---------- */
 function splitInto(el){
   let i = 0;
-  const walk = (node) => {
-    [...node.childNodes].forEach(n => {
-      if (n.nodeType === 3) {
-        const frag = document.createDocumentFragment();
-        for (const ch of n.textContent) {
-          const s = document.createElement('span');
-          if (ch.trim() === '') { s.textContent = '\u00A0'; }
-          else { s.className = 'ch'; s.style.setProperty('--i', i++); s.textContent = ch; }
-          frag.appendChild(s);
-        }
-        n.replaceWith(frag);
-      } else if (n.nodeType === 1) { walk(n); }
-    });
-  };
+  const walk = node => [...node.childNodes].forEach(n => {
+    if (n.nodeType === 3) {
+      const frag = document.createDocumentFragment();
+      for (const ch of n.textContent) {
+        const s = document.createElement('span');
+        if (ch.trim() === '') s.textContent = '\u00A0';
+        else { s.className = 'ch'; s.style.setProperty('--i', i++); s.textContent = ch; }
+        frag.appendChild(s);
+      }
+      n.replaceWith(frag);
+    } else if (n.nodeType === 1) walk(n);
+  });
   walk(el);
   el.classList.add('split-ready');
 }
-document.querySelectorAll('[data-split]').forEach(el => {
-  if (REDUCED) return;
-  // only split headings that are not already revealed by the hero animation
-  if (el.classList.contains('hero-title')) {
-    el.querySelectorAll('.line').forEach(line => splitInto(line));
-  } else {
-    splitInto(el);
-  }
+if (!REDUCED) document.querySelectorAll('[data-split]').forEach(el => {
+  if (el.classList.contains('hero-title')) el.querySelectorAll('.line').forEach(splitInto);
+  else splitInto(el);
 });
 
-/* ---------- hero 3D ---------- */
-function heroWebGL(cv){
+/* ---------- the stage ---------- */
+const stageCv = document.getElementById('stage3d');
+let stage = null;
+
+function buildStage(cv){
   let r;
   try { r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); }
-  catch (e) { return false; }
-  r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  r.outputEncoding = THREE.sRGBEncoding;
-
-  const scene = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(35, 1, .1, 60);
-  cam.position.set(0, 0, 7.2);
-
-  scene.add(new THREE.HemisphereLight(0xf4ffd0, 0x111508, .9));
-  const key = new THREE.DirectionalLight(0xffffff, 2.1); key.position.set(-3, 4, 5); scene.add(key);
-  const rim = new THREE.PointLight(0x46c489, 3, 14); rim.position.set(3, -1, 3); scene.add(rim);
-  const warm = new THREE.PointLight(0xf0a06a, 1.6, 10); warm.position.set(-3, 1, 2); scene.add(warm);
-
-  const group = new THREE.Group(); scene.add(group);
-
-  // glossy core
-  const core = new THREE.Mesh(new THREE.SphereGeometry(.9, 96, 72),
-    new THREE.MeshPhysicalMaterial({ color: 0xb3e04a, roughness: .24, metalness: .05, clearcoat: 1, clearcoatRoughness: .08, emissive: 0x1d2a05, emissiveIntensity: .45 }));
-  group.add(core);
-
-  // petal blades: ellipsoids that radiate from the core and sway in 3D
-  const mints = new THREE.MeshStandardMaterial({ color: 0x46c489, roughness: .35, emissive: 0x0d3b28, emissiveIntensity: .6, transparent: true, opacity: .92 });
-  const peach = new THREE.MeshStandardMaterial({ color: 0xf0a06a, roughness: .35, emissive: 0x3a1a08, emissiveIntensity: .5, transparent: true, opacity: .92 });
-  const blades = [];
-  const N = 8;
-  for (let i = 0; i < N; i++) {
-    const geo = new THREE.SphereGeometry(1, 32, 16);
-    geo.scale(.22, 1.1, .05);
-    const blade = new THREE.Mesh(geo, i % 3 === 0 ? peach : mints);
-    blade.position.y = 1.35;
-    const pivot = new THREE.Group();
-    pivot.add(blade);
-    pivot.rotation.z = (i / N) * Math.PI * 2;
-    group.add(pivot);
-    blades.push({ pivot, base: (i / N) * Math.PI * 2, i });
-  }
-
-  // orbit rings
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0xb3e04a, transparent: true, opacity: .55 });
-  const ringA = new THREE.Mesh(new THREE.TorusGeometry(1.9, .008, 8, 240), ringMat);
-  ringA.rotation.set(1.2, .2, 0); group.add(ringA);
-  const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.25, .006, 8, 240), new THREE.MeshBasicMaterial({ color: 0xf0a06a, transparent: true, opacity: .35 }));
-  ringB.rotation.set(.35, .9, .4); group.add(ringB);
-
-  // drifting spores
-  const P = 600, pos = new Float32Array(P * 3);
-  for (let i = 0; i < P; i++) {
-    const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u), rad = 2.4 + Math.random() * 2.2;
-    pos[i * 3] = Math.cos(th) * s * rad; pos[i * 3 + 1] = u * rad * .8; pos[i * 3 + 2] = Math.sin(th) * s * rad;
-  }
-  const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const spores = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xb3e04a, size: .03, transparent: true, opacity: .75, depthWrite: false }));
-  scene.add(spores);
-
-  let px = 0, py = 0;
-  cv.addEventListener('pointermove', e => { const b = cv.getBoundingClientRect(); px = (e.clientX - b.left) / b.width - .5; py = (e.clientY - b.top) / b.height - .5; });
-  cv.addEventListener('pointerleave', () => { px = 0; py = 0; });
-
-  function resize(){ const w = cv.clientWidth, h = cv.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
-  addEventListener('resize', resize); resize();
-
-  const t0 = performance.now();
-  let visible = true;
-  new IntersectionObserver(es => visible = es[0].isIntersecting).observe(cv);
-
-  function frame(now){
-    requestAnimationFrame(frame);
-    if (!visible) return;
-    const t = REDUCED ? 0 : (now - t0) / 1000;
-    group.rotation.y = t * .18 + px * .6;
-    group.rotation.x = py * .4;
-    core.scale.setScalar(1 + Math.sin(t * 1.6) * .02);
-    blades.forEach(b => {
-      b.pivot.rotation.z = b.base + Math.sin(t * .6 + b.i) * .08;
-      b.pivot.rotation.x = Math.sin(t * .5 + b.i * .9) * .35;
-    });
-    ringA.rotation.z = t * .22;
-    ringB.rotation.z = -t * .15;
-    spores.rotation.y = t * .03;
-    r.render(scene, cam);
-  }
-  requestAnimationFrame(frame);
-  return true;
-}
-
-/* 2D fallback petals when WebGL is unavailable */
-function heroFallback(cv){
-  const g = cv.getContext('2d');
-  let w, h;
-  function size(){ const dpr = Math.min(devicePixelRatio || 1, 2); w = cv.clientWidth; h = cv.clientHeight; cv.width = w * dpr; cv.height = h * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); }
-  function frame(now){
-    requestAnimationFrame(frame);
-    const t = REDUCED ? 0 : now / 1000;
-    g.clearRect(0, 0, w, h);
-    g.save(); g.translate(w / 2, h / 2); g.rotate(t * .08);
-    for (let i = 0; i < 12; i++){
-      const a = i / 12 * Math.PI * 2, len = Math.min(w, h) * .42 * (1 + Math.sin(t * .9 + i) * .08);
-      g.save(); g.rotate(a);
-      const grad = g.createLinearGradient(0, 0, len, 0);
-      grad.addColorStop(0, 'rgba(240,160,106,.95)'); grad.addColorStop(.35, i % 3 ? 'rgba(179,224,74,.9)' : 'rgba(70,196,137,.9)'); grad.addColorStop(1, 'rgba(179,224,74,0)');
-      g.fillStyle = grad; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(len * .5, -len * .14, len, 0); g.quadraticCurveTo(len * .5, len * .14, 0, 0); g.fill();
-      g.restore();
-    }
-    g.restore();
-  }
-  size(); addEventListener('resize', size); requestAnimationFrame(frame);
-}
-
-const heroCv = document.getElementById('hero3d');
-if (heroCv) {
-  if (!(HAS3D && heroWebGL(heroCv))) heroFallback(heroCv);
-}
-
-/* ---------- 3D room ---------- */
-function roomScene(cv, section){
-  let r;
-  try { r = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); } catch (e) { return false; }
-  r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+  catch (e) { return null; }
+  r.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
   r.outputEncoding = THREE.sRGBEncoding;
   r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.1;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0d06);
-  scene.fog = new THREE.Fog(0x0b0d06, 10, 22);
-  const cam = new THREE.PerspectiveCamera(38, 1, .1, 60);
+  scene.fog = new THREE.Fog(0x0b0d06, 12, 26);
+  const cam = new THREE.PerspectiveCamera(36, 1, .1, 60);
 
-  scene.add(new THREE.HemisphereLight(0xf1ffd4, 0x111508, .8));
-  const key = new THREE.DirectionalLight(0xfff6e0, 2.2); key.position.set(-4, 7, 4); key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  Object.assign(key.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 1, far: 20 });
-  scene.add(key);
-  const lamp = new THREE.PointLight(0xf0a06a, 1.4, 8, 1.6); lamp.position.set(-2, 2.2, 0.5); scene.add(lamp);
+  scene.add(new THREE.HemisphereLight(0xf1ffd4, 0x111508, .85));
+  const key = new THREE.DirectionalLight(0xfff6e0, 2.1); key.position.set(-4, 6, 5); scene.add(key);
+  const rim = new THREE.PointLight(0x46c489, 2.6, 16); rim.position.set(4, -1, 3); scene.add(rim);
+  const warm = new THREE.PointLight(0xf0a06a, 1.4, 12); warm.position.set(-3, 1.5, 2); scene.add(warm);
 
+  /* shared helpers */
   const M = (c, rough, extra) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: rough }, extra || {}));
-  const wood = M(0x6b4a2f, .6), fabric = M(0x2f6d55, .85), fabricLt = M(0x46c489, .8), cloth = M(0xd9e6a0, .7), metal = M(0x3b4236, .45, { metalness: .5 });
-  const floorM = M(0x1d2210, .85), wallM = M(0x262c15, .9);
+  const P = (c, rough, extra) => new THREE.MeshPhysicalMaterial(Object.assign({ color: c, roughness: rough, metalness: .05, clearcoat: 1, clearcoatRoughness: .08 }, extra || {}));
+  const add = (g, mesh, x, y, z) => { if (x !== undefined) mesh.position.set(x, y, z); g.add(mesh); return mesh; };
+  const box = (g, w, h, d, m, x, y, z) => add(g, new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m), x, y, z);
+  const cyl = (g, rt, rb, h, m, x, y, z) => add(g, new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 16), m), x, y, z);
+  const spores = (g, n, rad, size, color) => {
+    const arr = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u), rr = rad * (.7 + Math.random() * .6);
+      arr[i * 3] = Math.cos(th) * s * rr; arr[i * 3 + 1] = u * rr * .8; arr[i * 3 + 2] = Math.sin(th) * s * rr;
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size, transparent: true, opacity: .75, depthWrite: false }));
+    g.add(pts); return pts;
+  };
 
-  const box = (w, h, d, m, x, y, z) => { const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); mesh.position.set(x, y, z); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); return mesh; };
-  const cyl = (rt, rb, h, m, x, y, z) => { const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 16), m); mesh.position.set(x, y, z); mesh.castShadow = true; scene.add(mesh); return mesh; };
-
-  // floor and walls
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(7, 6), floorM);
-  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-  box(7, 2.7, .1, wallM, 0, 1.35, -3);
-  box(.1, 2.7, 6, wallM, -3.5, 1.35, 0);
-
-  // bed
-  box(2, .35, 1.4, wood, -1.6, .18, -1.2);
-  box(1.9, .25, 1.3, cloth, -1.6, .42, -1.2);
-  box(.8, .14, .4, cloth, -2.0, .6, -1.5);
-  // sofa
-  box(1.8, .35, .8, fabric, 1.4, .18, -1.9);
-  box(1.8, .5, .2, fabricLt, 1.4, .55, -2.2);
-  box(.2, .45, .8, fabric, .55, .42, -1.9); box(.2, .45, .8, fabric, 2.25, .42, -1.9);
-  // coffee table
-  box(1.0, .06, .6, wood, .2, .6, .3);
-  [[-.4, -.2], [.4, -.2], [-.4, .2], [.4, .2]].forEach(([x, z]) => cyl(.03, .03, .58, wood, .2 + x, .29, .3 + z));
-  // wardrobe
-  box(1.0, 2.2, .55, wood, 2.7, 1.1, -2.6);
-  box(.04, 1.8, .02, metal, 2.42, 1.1, -2.3);
-  // plant
-  cyl(.2, .16, .35, M(0xb5673b, .8), 2.6, .18, 1.6);
-  const leaf = new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 12), fabricLt);
-  leaf.scale.set(.7, 1.6, .3); leaf.position.set(2.6, .75, 1.6); scene.add(leaf);
-
-  // exit door: a glowing panel in the back wall
-  const doorGlow = M(0xb3e04a, .3, { emissive: 0xb3e04a, emissiveIntensity: 1.6 });
-  box(.95, 2.1, .06, doorGlow, -.6, 1.05, -2.94);
-  box(1.15, .08, .12, wood, -.6, 2.15, -2.92);
-  box(.08, 2.1, .12, wood, -1.2, 1.05, -2.92);
-  box(.08, 2.1, .12, wood, 0, 1.05, -2.92);
-  const exitLight = new THREE.PointLight(0xb3e04a, 1.2, 4); exitLight.position.set(-.6, 1.2, -2.5); scene.add(exitLight);
-
-  // escape route: a glowing tube from the bed to the exit, plus a pulse that runs along it
-  const route = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-1.6, .6, -.4), new THREE.Vector3(-.9, .05, .3), new THREE.Vector3(.2, .05, .9),
-    new THREE.Vector3(1.0, .05, .2), new THREE.Vector3(.2, .05, -1.1), new THREE.Vector3(-.5, .05, -2.0),
-    new THREE.Vector3(-.6, .6, -2.5)
-  ]);
-  const routeMat = new THREE.MeshStandardMaterial({ color: 0xf0a06a, emissive: 0xf0a06a, emissiveIntensity: 1.2, roughness: .3 });
-  scene.add(new THREE.Mesh(new THREE.TubeGeometry(route, 200, .03, 8, false), routeMat));
-  const pulse = new THREE.Mesh(new THREE.SphereGeometry(.09, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-  scene.add(pulse);
-
-  // a few floating spores for depth
-  const S = 260, sp = new Float32Array(S * 3);
-  for (let i = 0; i < S; i++) { sp[i * 3] = (Math.random() - .5) * 8; sp[i * 3 + 1] = Math.random() * 3; sp[i * 3 + 2] = (Math.random() - .5) * 7; }
-  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
-  const sporesRoom = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xb3e04a, size: .03, transparent: true, opacity: .6, depthWrite: false }));
-  scene.add(sporesRoom);
-
-  function resize(){ const w = cv.clientWidth, h = cv.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
-  addEventListener('resize', resize); resize();
-
-  // scroll progress through the section: 0 at entry, 1 at exit
-  function progress(){
-    const rect = section.getBoundingClientRect();
-    const total = rect.height - innerHeight;
-    return Math.min(1, Math.max(0, -rect.top / Math.max(1, total)));
+  /* 1. CORE: glossy sphere, petal blades, orbit rings */
+  function makeCore(){
+    const g = new THREE.Group(), anim = [];
+    const core = add(g, new THREE.Mesh(new THREE.SphereGeometry(.9, 96, 72), P(0xb3e04a, .24, { emissive: 0x1d2a05, emissiveIntensity: .45 })));
+    const mints = M(0x46c489, .35, { emissive: 0x0d3b28, emissiveIntensity: .6, transparent: true, opacity: .92 });
+    const peach = M(0xf0a06a, .35, { emissive: 0x3a1a08, emissiveIntensity: .5, transparent: true, opacity: .92 });
+    const N = 8;
+    for (let i = 0; i < N; i++){
+      const geo = new THREE.SphereGeometry(1, 32, 16); geo.scale(.22, 1.1, .05);
+      const pivot = new THREE.Group(); const blade = new THREE.Mesh(geo, i % 3 === 0 ? peach : mints);
+      blade.position.y = 1.35; pivot.add(blade); pivot.rotation.z = (i / N) * Math.PI * 2; g.add(pivot);
+      anim.push(t => { pivot.rotation.z = (i / N) * Math.PI * 2 + Math.sin(t * .6 + i) * .08; pivot.rotation.x = Math.sin(t * .5 + i * .9) * .35; });
+    }
+    const ra = add(g, new THREE.Mesh(new THREE.TorusGeometry(1.9, .008, 8, 240), new THREE.MeshBasicMaterial({ color: 0xb3e04a, transparent: true, opacity: .55 })));
+    ra.rotation.set(1.2, .2, 0);
+    const rb = add(g, new THREE.Mesh(new THREE.TorusGeometry(2.25, .006, 8, 240), new THREE.MeshBasicMaterial({ color: 0xf0a06a, transparent: true, opacity: .35 })));
+    rb.rotation.set(.35, .9, .4);
+    const sp = spores(g, 500, 2.8, .03, 0xb3e04a);
+    anim.push(t => { core.scale.setScalar(1 + Math.sin(t * 1.6) * .02); ra.rotation.z = t * .22; rb.rotation.z = -t * .15; sp.rotation.y = t * .03; });
+    return { group: g, anim, fit: 1, offset: [2.4, 0, 0] };
   }
 
-  const t0 = performance.now();
-  let visible = true;
-  new IntersectionObserver(es => visible = es[0].isIntersecting).observe(cv);
+  /* 2. DOOR: exit door in a wall, a glowing escape route and a pulse running along it */
+  function makeDoor(){
+    const g = new THREE.Group(), anim = [];
+    const wallM = M(0x262c15, .9), wood = M(0x6b4a2f, .6);
+    box(g, 4.2, 3, .12, wallM, 0, 0, 0);
+    const glow = M(0xb3e04a, .3, { emissive: 0xb3e04a, emissiveIntensity: 1.5 });
+    box(g, .95, 2.05, .06, glow, -.4, -.1, .1);
+    box(g, 1.15, .08, .12, wood, -.4, .93, .12); box(g, .08, 2.05, .12, wood, -.88, -.1, .12); box(g, .08, 2.05, .12, wood, .08, -.1, .12);
+    const route = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.6, -.9, .3), new THREE.Vector3(-.8, -1.1, .6), new THREE.Vector3(.4, -1.1, .9),
+      new THREE.Vector3(1.4, -1.0, .5), new THREE.Vector3(1.2, -.4, .3), new THREE.Vector3(.4, -.3, .25), new THREE.Vector3(-.4, -.5, .2)
+    ]);
+    const tubeM = M(0xf0a06a, .3, { emissive: 0xf0a06a, emissiveIntensity: 1.3 });
+    add(g, new THREE.Mesh(new THREE.TubeGeometry(route, 220, .035, 10, false), tubeM));
+    const pulse = add(g, new THREE.Mesh(new THREE.SphereGeometry(.11, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })));
+    const ex = new THREE.PointLight(0xb3e04a, 1.6, 4); ex.position.set(-.4, 0, .6); g.add(ex);
+    anim.push(t => {
+      pulse.position.copy(route.getPointAt((t * .12) % 1));
+      glow.emissiveIntensity = 1.3 + Math.sin(t * 2.2) * .35;
+      ex.intensity = 1.2 + Math.sin(t * 2.2) * .4;
+    });
+    return { group: g, anim, fit: 1.1, offset: [2.2, 0, 0] };
+  }
 
+  /* 3. ROOM: the interactive 3D room (furniture, plant, wardrobe) */
+  function makeRoom(){
+    const g = new THREE.Group(), anim = [];
+    const wood = M(0x6b4a2f, .6), fabric = M(0x2f6d55, .85), fabricLt = M(0x46c489, .8), cloth = M(0xd9e6a0, .7), metal = M(0x3b4236, .45, { metalness: .5 });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(7, 6), M(0x1d2210, .85)); floor.rotation.x = -Math.PI / 2; g.add(floor);
+    box(g, 7, 2.7, .1, M(0x262c15, .9), 0, 1.35, -3);
+    box(g, .1, 2.7, 6, M(0x262c15, .9), -3.5, 1.35, 0);
+    box(g, 2, .35, 1.4, wood, -1.6, .18, -1.2); box(g, 1.9, .25, 1.3, cloth, -1.6, .42, -1.2); box(g, .8, .14, .4, cloth, -2.0, .6, -1.5);
+    box(g, 1.8, .35, .8, fabric, 1.4, .18, -1.9); box(g, 1.8, .5, .2, fabricLt, 1.4, .55, -2.2);
+    box(g, .2, .45, .8, fabric, .55, .42, -1.9); box(g, .2, .45, .8, fabric, 2.25, .42, -1.9);
+    box(g, 1.0, .06, .6, wood, .2, .6, .3);
+    [[-.4, -.2], [.4, -.2], [-.4, .2], [.4, .2]].forEach(([x, z]) => cyl(g, .03, .03, .58, wood, .2 + x, .29, .3 + z));
+    box(g, 1.0, 2.2, .55, wood, 2.7, 1.1, -2.6); box(g, .04, 1.8, .02, metal, 2.42, 1.1, -2.3);
+    cyl(g, .2, .16, .35, M(0xb5673b, .8), 2.6, .18, 1.6);
+    const leaf = add(g, new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 12), fabricLt), 2.6, .75, 1.6); leaf.scale.set(.7, 1.6, .3);
+    const doorGlow = M(0xb3e04a, .3, { emissive: 0xb3e04a, emissiveIntensity: 1.5 });
+    box(g, .95, 2.1, .06, doorGlow, -.6, 1.05, -2.94);
+    box(g, 1.15, .08, .12, wood, -.6, 2.15, -2.92);
+    const lamp = new THREE.PointLight(0xf0a06a, 1.4, 8, 1.6); lamp.position.set(-2, 2.2, .5); g.add(lamp);
+    anim.push(t => { doorGlow.emissiveIntensity = 1.4 + Math.sin(t * 2.2) * .3; });
+    return { group: g, anim, fit: .62, offset: [1.2, -.5, 0], camLook: [0, 1.4, -1] };
+  }
+
+  /* 4. CUBES: floating rounded cubes for the benefits */
+  function makeCubes(){
+    const g = new THREE.Group(), anim = [];
+    const cols = [0xb3e04a, 0x46c489, 0xf0a06a, 0xb3e04a];
+    const cubes = [];
+    for (let i = 0; i < 4; i++){
+      const c = add(g, new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), P(cols[i], .3, { roughness: .3 })), (i - 1.5) * 1.35, Math.sin(i) * .2, 0);
+      cubes.push(c);
+    }
+    const inner = add(g, new THREE.Mesh(new THREE.IcosahedronGeometry(.45, 1), M(0xffffff, .2, { emissive: 0xf0a06a, emissiveIntensity: .3 })), 0, 0, 0);
+    anim.push(t => {
+      cubes.forEach((c, i) => { c.rotation.x = t * .4 + i; c.rotation.y = t * .55 + i * .6; c.position.y = Math.sin(t * .9 + i) * .2; });
+      inner.rotation.y = -t * .8;
+    });
+    return { group: g, anim, fit: 1, offset: [2.3, 0, 0] };
+  }
+
+  /* 5. KNOT: a glossy torus knot for the problems panel */
+  function makeKnot(){
+    const g = new THREE.Group(), anim = [];
+    const knot = add(g, new THREE.Mesh(new THREE.TorusKnotGeometry(.8, .24, 220, 28), P(0xb3e04a, .25, { metalness: .4, roughness: .2 })));
+    const wire = add(g, new THREE.Mesh(new THREE.TorusKnotGeometry(.82, .25, 120, 12), new THREE.MeshBasicMaterial({ color: 0x46c489, wireframe: true, transparent: true, opacity: .25 })));
+    anim.push(t => { knot.rotation.x = t * .3; knot.rotation.y = t * .45; wire.rotation.copy(knot.rotation); });
+    return { group: g, anim, fit: 1, offset: [2.2, 0, 0] };
+  }
+
+  /* 6. RINGS: stacked orbit rings with orbiting spheres for the FAQ */
+  function makeRings(){
+    const g = new THREE.Group(), anim = [];
+    const rings = [];
+    for (let i = 0; i < 5; i++){
+      const rr = add(g, new THREE.Mesh(new THREE.TorusGeometry(.9 + i * .33, .018, 10, 200), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x46c489 : 0xb3e04a, transparent: true, opacity: .75 })));
+      rr.rotation.set(Math.PI / 2 + i * .25, i * .6, 0); rings.push(rr);
+    }
+    const orbs = [];
+    for (let i = 0; i < 5; i++){
+      orbs.push(add(g, new THREE.Mesh(new THREE.SphereGeometry(.09, 16, 12), P(0xf0a06a, .3))));
+    }
+    anim.push(t => {
+      rings.forEach((rr, i) => { rr.rotation.z = t * (.2 + i * .07) * (i % 2 ? 1 : -1); });
+      orbs.forEach((o, i) => {
+        const ring = rings[i], a = t * (.6 + i * .15) + i;
+        const rad = .9 + i * .33;
+        o.position.set(Math.cos(a) * rad, 0, Math.sin(a) * rad);
+        o.position.applyEuler(ring.rotation);
+      });
+    });
+    return { group: g, anim, fit: 1, offset: [2.2, 0, 0] };
+  }
+
+  /* 7. PATH: a glowing helix with a pulse for the roadmap */
+  function makePath(){
+    const g = new THREE.Group(), anim = [];
+    const pts = [];
+    for (let i = 0; i <= 120; i++){ const t = i / 120; pts.push(new THREE.Vector3(Math.cos(t * Math.PI * 4) * 1.1, (t - .5) * 3.2, Math.sin(t * Math.PI * 4) * 1.1)); }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    add(g, new THREE.Mesh(new THREE.TubeGeometry(curve, 300, .03, 8, false), M(0xb3e04a, .3, { emissive: 0xb3e04a, emissiveIntensity: .9 })));
+    const dots = [];
+    for (let i = 0; i < 6; i++){ dots.push(add(g, new THREE.Mesh(new THREE.SphereGeometry(.1, 16, 12), P(0x46c489, .3)))); }
+    anim.push(t => {
+      dots.forEach((d, i) => d.position.copy(curve.getPointAt(((t * .07) + i / 6) % 1)));
+      g.rotation.y = t * .15;
+    });
+    return { group: g, anim, fit: 1, offset: [2.2, 0, 0] };
+  }
+
+  /* 8. BLOCKS: a cluster of crystals for the footer */
+  function makeBlocks(){
+    const g = new THREE.Group(), anim = [];
+    const cols = [0xb3e04a, 0x46c489, 0xf0a06a];
+    const shapes = [];
+    for (let i = 0; i < 7; i++){
+      const m = add(g, new THREE.Mesh(new THREE.OctahedronGeometry(.32 + (i % 3) * .08, 0), P(cols[i % 3], .25, { metalness: .2 })),
+        Math.cos(i * 2.1) * 1.3, Math.sin(i * 1.7) * .6, Math.sin(i * 2.1) * .8);
+      shapes.push(m);
+    }
+    anim.push(t => shapes.forEach((m, i) => { m.rotation.x = t * (.3 + i * .05); m.rotation.y = t * (.5 + i * .04); m.position.y += Math.sin(t + i) * .0003; }));
+    return { group: g, anim, fit: 1, offset: [2.0, -.4, 0] };
+  }
+
+  const builders = { core: makeCore, door: makeDoor, room: makeRoom, cubes: makeCubes, knot: makeKnot, rings: makeRings, path: makePath, blocks: makeBlocks };
+  const models = {};
+  for (const [key, fn] of Object.entries(builders)){
+    const m = fn();
+    m.group.visible = false; m.group.scale.setScalar(.001); m.s = 0; m.key = key;
+    scene.add(m.group); models[key] = m;
+  }
+
+  function resize(){
+    const w = cv.clientWidth, h = cv.clientHeight;
+    r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize); resize();
+
+  /* which model should be on: the section that crosses the middle of the viewport */
+  const sections = [...document.querySelectorAll('[data-model]')];
+  function activeKey(){
+    const mid = innerHeight * .5;
+    let best = null, bestDist = Infinity;
+    for (const s of sections){
+      const rect = s.getBoundingClientRect();
+      if (rect.top <= mid && rect.bottom >= mid) return s.dataset.model;
+      const d = Math.min(Math.abs(rect.top - mid), Math.abs(rect.bottom - mid));
+      if (d < bestDist){ bestDist = d; best = s.dataset.model; }
+    }
+    return best || 'core';
+  }
+
+  let px = 0, py = 0;
+  addEventListener('pointermove', e => { px = e.clientX / innerWidth - .5; py = e.clientY / innerHeight - .5; }, { passive: true });
+
+  const t0 = performance.now();
+  let last = t0, cur = 'core';
   function frame(now){
     requestAnimationFrame(frame);
-    if (!visible) return;
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
     const t = REDUCED ? 0 : (now - t0) / 1000;
-    const p = progress();
-    const a = p * Math.PI * 1.1 + Math.PI * .15 + (REDUCED ? 0 : Math.sin(t * .2) * .05);
-    const dist = 8.2 - Math.sin(p * Math.PI) * 1.2;
-    cam.position.set(Math.sin(a) * dist, 4.2 - p * 1.4, Math.cos(a) * dist);
-    cam.lookAt(0, .7, -.6);
-    const u = REDUCED ? .3 : (t * .09) % 1;
-    pulse.position.copy(route.getPointAt(u));
-    exitLight.intensity = 1.0 + Math.sin(t * 2.2) * .4;
-    doorGlow.emissiveIntensity = 1.4 + Math.sin(t * 2.2) * .3;
-    sporesRoom.rotation.y = t * .02;
+    const want = activeKey();
+    if (want !== cur) cur = want;
+    const wide = innerWidth > 900;
+
+    for (const key in models){
+      const m = models[key];
+      const target = key === cur ? 1 : 0;
+      m.s += (target - m.s) * (1 - Math.exp(-dt * 4));
+      const vis = m.s > .004;
+      m.group.visible = vis;
+      if (!vis) continue;
+      const k = Math.max(.001, m.s * m.fit);
+      m.group.scale.setScalar(k);
+      const ox = wide ? m.offset[0] : 0;
+      const oy = m.offset[1] + (1 - m.s) * .6;
+      m.group.position.set(ox + px * .3, oy - py * .2, m.offset[2]);
+      m.group.rotation.y = (REDUCED ? 0 : Math.sin(t * .2) * .15) + px * .2;
+      m.anim.forEach(fn => fn(t));
+    }
+
+    const look = models[cur] && models[cur].camLook ? models[cur].camLook : [0, 0, 0];
+    cam.position.set(px * .6, .6 - py * .4, 9.4);
+    cam.lookAt(look[0] + (wide ? 0 : 0), look[1], look[2]);
     r.render(scene, cam);
   }
   requestAnimationFrame(frame);
   return true;
 }
 
-const roomCv = document.getElementById('room3dcv');
-const roomSection = document.getElementById('room');
-if (roomCv && roomSection && HAS3D) {
-  roomScene(roomCv, roomSection);
-}
+stage = stageCv && HAS3D ? buildStage(stageCv) : null;
 
 /* ---------- scroll progress, parallax, cursor spotlight ---------- */
 const bar = document.getElementById('progress');

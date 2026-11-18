@@ -16,7 +16,7 @@ Notes
 - Room safety copy is a planning aid. Verify dimensions with a tape measure.
 
 3D and effects
-- Hero: three.js core, petal blades and orbit rings (WebGL). Falls back to 2D petals if WebGL is unavailable.
+- One full-page three.js stage. Each section has its own 3D model that grows in as you scroll to it.
 - 3D room: scroll orbits the camera; the escape route pulses toward the exit.
 - Effects: letter reveals, scroll progress bar, cursor spotlight, tilting cards, magnetic buttons, parallax headings.
 - three.js loads from cdnjs (r128). Needs internet on first load.
