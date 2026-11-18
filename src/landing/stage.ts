@@ -52,13 +52,14 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const specs = buildModels();
+  const MODEL_KEYS: ModelKey[] = ['core', 'door', 'room', 'cubes', 'knot', 'rings', 'path', 'blocks'];
   const views: SlotView[] = [];
 
   for (const el of slotEls) {
     const key = el.dataset.model as ModelKey | undefined;
-    if (!key || !(key in specs)) continue;
-    const spec = specs[key];
+    if (!key || !MODEL_KEYS.includes(key)) continue;
+    // Build a fresh copy per slot: a three.js object can only live in one scene.
+    const spec = buildModels()[key];
 
     const scene = new THREE.Scene();
     scene.environment = envTex;
