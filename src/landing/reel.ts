@@ -7,6 +7,8 @@
 
 const REVEAL_MS = 900;
 const AUTOPLAY_MS = 3200;
+/* the outgoing model fades out first; the incoming one appears after this pause so they never overlap */
+const SWAP_DELAY_MS = 1000;
 
 function easeInOut(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -36,6 +38,7 @@ export function initReel(reduced: boolean): void {
   let inView = false;
   let lastAction = performance.now();
   let revealFrame = 0;
+  let swapTimer = 0;
   let pendingColor = '';
 
   const colorOf = (i: number): string => items[i]?.dataset.color ?? '#b3e04a';
@@ -90,7 +93,13 @@ export function initReel(reduced: boolean): void {
     const it = items[idx];
     if (!it) return;
     active = idx;
-    items.forEach((el, j) => { el.toggleAttribute('data-off', j !== idx); });
+    items.forEach((el, j) => { if (j !== idx) el.setAttribute('data-off', ''); });
+    window.clearTimeout(swapTimer);
+    if (instant) {
+      items[idx]?.removeAttribute('data-off');
+    } else {
+      swapTimer = window.setTimeout(() => items[idx]?.removeAttribute('data-off'), SWAP_DELAY_MS);
+    }
     splitTitle(it.dataset.name ?? '');
     subEl.textContent = it.dataset.sub ?? '';
     countEl.textContent = String(idx + 1).padStart(2, '0');
