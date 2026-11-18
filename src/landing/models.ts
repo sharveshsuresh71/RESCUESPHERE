@@ -428,6 +428,30 @@ export function buildGuide(): Spec {
   const soft = (w: number, h: number, d: number, r: number, m: THREE.Material, x: number, y: number, z: number): THREE.Mesh =>
     add(shadowed(new THREE.Mesh(rbox(w, h, d, r), m)), x, y, z);
 
+  // soft lime glow pooled on the ground under the room, so it sits on the dark hero instead of floating
+  if (typeof document !== 'undefined') {
+    const gc = document.createElement('canvas');
+    gc.width = gc.height = 256;
+    const gx = gc.getContext('2d');
+    if (gx) {
+      const grad = gx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      grad.addColorStop(0, 'rgba(179,224,74,0.38)');
+      grad.addColorStop(0.45, 'rgba(179,224,74,0.12)');
+      grad.addColorStop(1, 'rgba(179,224,74,0)');
+      gx.fillStyle = grad;
+      gx.fillRect(0, 0, 256, 256);
+      const glowTex = new THREE.CanvasTexture(gc);
+      glowTex.colorSpace = THREE.SRGBColorSpace;
+      const pool = new THREE.Mesh(
+        new THREE.PlaneGeometry(11, 11),
+        new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, toneMapped: false })
+      );
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(0.3, -0.2, 1.0);
+      g.add(pool);
+    }
+  }
+
   // floor and paving outside the exit
   soft(6.4, 0.16, 4.8, 0.02, woodMat(), 0, -0.08, 0);
   block(2.4, 0.05, 2.2, std(0xcfc6b6, 0.9), DOOR_X, 0.02, 3.3);
@@ -510,6 +534,11 @@ export function buildGuide(): Spec {
   block(0.04, 0.6, 0.04, std(C.metal, 0.5), DOOR_X, 0.31, 4.0);
   const marker = add(shadowed(new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), glow(C.mint, 1.6))), DOOR_X, 0.66, 4.0);
 
+  // the doorway spills lime light onto the paving and the first arrows
+  const doorLight = new THREE.PointLight(C.lime, 3.2, 6, 1.6);
+  doorLight.position.set(DOOR_X, 1.3, WZ + 0.7);
+  g.add(doorLight);
+
   anim.push((t) => {
     arrowMats.forEach((m, i) => {
       // a soft wave travels from the bed towards the door
@@ -519,15 +548,19 @@ export function buildGuide(): Spec {
     routeMat.emissiveIntensity = 0.8 + 0.2 * Math.sin(t * 1.6);
     exitSign.scale.x = 1 + 0.03 * Math.sin(t * 2.4);
     marker.scale.setScalar(1 + 0.06 * Math.sin(t * 1.8));
+    doorLight.intensity = 3 + 0.8 * Math.sin(t * 2.2);
+    // slow sway and a gentle float, so the room feels alive without needing a drag
+    g.rotation.y = Math.sin(t * 0.35) * 0.12;
+    g.position.y = Math.sin(t * 0.9) * 0.06;
   });
 
   return {
     group: g,
     anim,
     assemble: () => {},
-    fit: 1.1,
+    fit: 1.0,
     offset: [0, 0, 0],
-    camPos: [0.4, 9.2, 12.5],
-    camLook: [0.2, 0.6, 0.4]
+    camPos: [5.0, 8.4, 11.2],
+    camLook: [0.2, 0.2, 1.0]
   };
 }

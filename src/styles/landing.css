@@ -310,3 +310,104 @@ main{position:relative;z-index:1}
 .rf-stage > .slot { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); width: min(92vw, 74vh, 760px); height: min(78vh, 760px); }
 /* hero title sits below the house, not over it */
 .rf-hero .rf-title { font-size: clamp(40px, 6.4vw, 104px); bottom: 96px; }
+
+/* ===== Hero v3: dark, modern split layout =====
+   Copy on the left, the 3D room on the right, a lime glow behind the room.
+   These rules override the older .rf-hero rules above. */
+
+.rf-hero{
+  --ink:#f2f7e4;
+  --muted:rgba(242,247,228,.7);
+  --gut:clamp(24px,5.2vw,88px);
+  height:calc(100svh - 112px);
+  min-height:620px;
+  background:#0a0d05;
+  color:var(--ink);
+  isolation:isolate;
+}
+.rf-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(58% 72% at 70% 54%,rgba(179,224,74,.24),rgba(179,224,74,0) 64%),
+    radial-gradient(42% 52% at 6% 104%,rgba(70,196,137,.18),rgba(70,196,137,0) 70%),
+    linear-gradient(180deg,#111508 0%,#090c04 100%)}
+.rf-bg::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(179,224,74,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(179,224,74,.07) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(70% 85% at 70% 52%,#000 0%,transparent 78%);
+  mask-image:radial-gradient(70% 85% at 70% 52%,#000 0%,transparent 78%)}
+
+.rf-stage{z-index:1}
+.rf-hero .rf-stage > .slot{
+  left:auto;right:clamp(8px,2vw,40px);top:50%;
+  transform:translateY(-50%);
+  width:min(56vw,980px);height:min(94%,820px);
+}
+.rf-hero .rf-stage > .slot::after{
+  content:"Drag to rotate";left:50%;bottom:6px;transform:translateX(-50%);
+  padding:7px 12px;border-radius:999px;border:1px solid rgba(179,224,74,.25);
+  background:rgba(10,13,5,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  font:600 11px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:rgba(242,247,228,.7)}
+
+.rf-copy{position:absolute;z-index:3;left:var(--gut);top:50%;transform:translateY(-47%);width:min(44vw,640px)}
+.rf-copy > *{animation:rfUp .9s cubic-bezier(.22,1,.36,1) both}
+.rf-copy > :nth-child(2){animation-delay:.08s}
+.rf-copy > :nth-child(3){animation-delay:.18s}
+.rf-copy > :nth-child(4){animation-delay:.28s}
+.rf-copy > :nth-child(5){animation-delay:.38s}
+@keyframes rfUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+.rf-hero .rf-kicker{position:static;display:inline-flex;align-items:center;gap:10px;margin:0 0 28px;
+  padding:8px 14px;border-radius:999px;border:1px solid rgba(179,224,74,.35);background:rgba(179,224,74,.08);
+  color:var(--lime);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.rf-dot{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 0 rgba(179,224,74,.6);animation:rfPulse 2.2s ease-out infinite}
+@keyframes rfPulse{0%{box-shadow:0 0 0 0 rgba(179,224,74,.55)}100%{box-shadow:0 0 0 12px rgba(179,224,74,0)}}
+
+.rf-hero .rf-title{position:static;bottom:auto;margin:0 0 24px;white-space:normal;text-transform:none;
+  font-size:clamp(56px,8.2vw,136px);font-weight:600;line-height:.9;letter-spacing:-.045em;color:var(--ink)}
+.rf-hero .rf-title em{display:block;font-family:var(--serif);font-style:italic;font-weight:300;letter-spacing:-.025em;
+  background:linear-gradient(100deg,#d4f56f 0%,#b3e04a 45%,#46c489 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.08em}
+
+.rf-hero .rf-sub{position:static;bottom:auto;max-width:440px;margin:0 0 34px;color:var(--muted);
+  font-size:clamp(16px,1.4vw,20px);font-weight:400;line-height:1.5}
+
+.rf-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.rf-hero .rf-cta{position:static;gap:10px;border:0;padding:16px 26px;background:var(--lime);color:#0a0d05;
+  font-size:15px;font-weight:600;box-shadow:0 14px 44px -12px rgba(179,224,74,.6)}
+.rf-hero .rf-cta:hover{background:#cdf26a;color:#0a0d05}
+.rf-ghost{display:inline-flex;align-items:center;padding:16px 24px;border-radius:999px;border:1px solid rgba(242,247,228,.28);
+  color:var(--ink);font-size:15px;font-weight:500;transition:border-color .2s,color .2s,background .2s}
+.rf-ghost:hover{border-color:var(--lime);color:var(--lime);background:rgba(179,224,74,.06)}
+
+.rf-points{display:flex;flex-wrap:wrap;gap:10px 24px;margin-top:40px;font-size:13px;color:var(--muted)}
+.rf-points li{display:inline-flex;align-items:center;gap:8px}
+.rf-points li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lime)}
+
+.rf-chip{position:absolute;z-index:3;bottom:34px;display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border-radius:999px;
+  background:rgba(18,24,10,.55);border:1px solid rgba(179,224,74,.28);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  font:600 12px var(--sans);letter-spacing:.04em;color:var(--ink);animation:rfFloat 6s ease-in-out infinite}
+.rf-chip-route{right:calc(2vw + 128px)}
+.rf-chip-exit{right:2vw;animation-delay:-3s}
+.rf-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--peach);box-shadow:0 0 12px var(--peach)}
+.rf-chip-dot.is-mint{background:var(--lime);box-shadow:0 0 12px var(--lime)}
+@keyframes rfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.rf-scroll{position:absolute;z-index:3;left:var(--gut);bottom:26px;display:inline-flex;align-items:center;gap:12px;
+  font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.rf-scroll i{display:block;width:38px;height:1px;background:linear-gradient(90deg,var(--lime),transparent);transform-origin:left;animation:rfLine 2.4s ease-in-out infinite}
+@keyframes rfLine{0%,100%{transform:scaleX(.35)}50%{transform:scaleX(1)}}
+.rf-scroll:hover{color:var(--lime)}
+
+@media (max-height:720px){.rf-scroll{display:none}}
+@media (max-width:1100px){.rf-chip{display:none}}
+@media (max-width:820px){
+  .rf-hero{height:auto;min-height:0;padding:40px 20px 24px}
+  .rf-copy{position:relative;left:auto;top:auto;transform:none;width:auto}
+  .rf-hero .rf-title{font-size:clamp(52px,16vw,88px)}
+  .rf-points{margin-top:28px}
+  .rf-stage{position:relative;inset:auto}
+  .rf-hero .rf-stage > .slot{position:relative;right:auto;left:auto;top:auto;transform:none;width:100%;height:58vh;margin-top:18px}
+  .rf-scroll{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .rf-copy > *,.rf-chip,.rf-dot,.rf-scroll i{animation:none}
+}
