@@ -402,95 +402,142 @@ export function buildModels(): Record<ModelKey, Spec> {
   };
 }
 
-/* Hero: one full house. Its front door is lit and a glowing route runs out of the door to the meeting point. */
+/* Hero: a two-storey mansion. Stone plinth and cornices, a columned portico with a pediment, sash windows
+   with sills, a pitched roof with gable ends, chimneys, hedges and a lawn. A glowing route runs from the
+   front door down the path to the meeting point. */
 export function buildHouse(): Spec {
   const g = new THREE.Group();
   const anim: Anim[] = [];
-  const wallM = std(C.wall, 0.95);
-  const WH = 2.2;          // wall height
-  const T = 0.14;          // wall thickness
-  const W = 4.0, D = 3.0;  // footprint: x in [-2, 2], z in [-1.5, 1.5]
+  const stone = std(0xe9e1d2, 0.9);
+  const trim = std(0xf7f2ea, 0.8);
+  const roofM = std(0x4a3a33, 0.8);
+  const doorM = std(C.woodDark, 0.55);
+  const hedgeM = std(0x3f6b4c, 0.9);
+  const lawnM = std(0x9bb58a, 0.95);
+  const pathM = std(0xcfc6b6, 0.9);
+  const glassM = new THREE.MeshPhysicalMaterial({ color: C.glass, roughness: 0.05, transparent: true, opacity: 0.55 });
+  const litM = std(0xffd98a, 0.4, { emissive: 0xffc56b, emissiveIntensity: 0.35 });
 
-  // ground and paving
-  const ground = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.1, 8.5), std(C.floor, 0.9));
-  ground.position.set(0, -0.05, 0);
-  g.add(shadowed(ground));
-  const path = new THREE.Mesh(rbox(1.2, 0.05, 3.2, 0.02), std(C.tile, 0.9));
-  path.position.set(0, 0.03, 3.1);
-  g.add(shadowed(path));
+  const W = 7.0, D = 4.4;        // main body footprint
+  const hw = W / 2, hd = D / 2;  // half sizes
 
-  // walls
-  const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number): THREE.Mesh => {
-    const m = shadowed(new THREE.Mesh(geo, mat));
-    m.position.set(x, y, z);
-    g.add(m);
-    return m;
+  const add = <M extends THREE.Object3D>(o: M, x: number, y: number, z: number): M => {
+    o.position.set(x, y, z);
+    g.add(o);
+    return o;
   };
-  add(new THREE.BoxGeometry(W, WH, T), wallM, 0, WH / 2, -D / 2 + T / 2);           // back
-  add(new THREE.BoxGeometry(T, WH, D), wallM, -W / 2 + T / 2, WH / 2, 0);          // left
-  add(new THREE.BoxGeometry(T, WH, D), wallM, W / 2 - T / 2, WH / 2, 0);           // right
-  add(new THREE.BoxGeometry(1.6, WH, T), wallM, -1.2, WH / 2, D / 2 - T / 2);      // front, left of door
-  add(new THREE.BoxGeometry(1.6, WH, T), wallM, 1.2, WH / 2, D / 2 - T / 2);       // front, right of door
-  add(new THREE.BoxGeometry(0.8, WH - 1.5, T), wallM, 0, 1.5 + (WH - 1.5) / 2, D / 2 - T / 2); // lintel
+  const block = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number): THREE.Mesh =>
+    add(shadowed(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m)), x, y, z);
 
-  // windows
-  const glassM = new THREE.MeshPhysicalMaterial({ color: C.glass, roughness: 0.05, transparent: true, opacity: 0.6 });
-  const pane = (w: number, h: number, x: number, y: number, z: number, ry: number): void => {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), glassM);
-    p.position.set(x, y, z);
-    p.rotation.y = ry;
-    g.add(p);
-  };
-  pane(0.7, 0.7, -1.2, 1.25, D / 2 + 0.01, 0);
-  pane(0.7, 0.7, 1.2, 1.25, D / 2 + 0.01, 0);
-  pane(0.7, 0.7, -1.2, 1.25, -D / 2 - 0.01, Math.PI);
-  pane(0.7, 0.7, 1.2, 1.25, -D / 2 - 0.01, Math.PI);
-  pane(0.7, 0.7, W / 2 + 0.01, 1.25, 0.6, Math.PI / 2);
-  pane(0.7, 0.7, -W / 2 - 0.01, 1.25, -0.6, -Math.PI / 2);
+  // lawn, plinth and body
+  block(14, 0.08, 13.6, lawnM, 0, -0.04, 0.9);
+  block(W + 0.5, 0.3, D + 0.5, stone, 0, 0.15, 0);
+  block(W, 2.6, D, stone, 0, 1.6, 0);                 // ground floor
+  block(W + 0.3, 0.18, D + 0.3, trim, 0, 2.99, 0);    // first cornice
+  block(W, 2.32, D, stone, 0, 4.24, 0);               // upper floor
+  block(W + 0.3, 0.2, D + 0.3, trim, 0, 5.45, 0);     // roof cornice
 
-  // roof: two panels meeting at the ridge
-  const roofM = std(0x6b4a2f, 0.7);
-  const slope = Math.atan2(1.2, D / 2);
-  const roofA = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, 0.12, 2.4), roofM));
-  roofA.position.set(0, WH + 0.6, -D / 4);
+  // side wings, lower than the main house, with a flat roof and cornice
+  for (const sx of [-1, 1]) {
+    const wx = sx * (hw + 1.5);
+    block(3.0, 3.0, 3.6, stone, wx, 1.8, -0.2);       // wing body
+    block(3.2, 0.18, 3.8, trim, wx, 3.39, -0.2);      // wing cornice
+    block(3.2, 0.5, 3.8, roofM, wx, 3.7, -0.2);       // flat roof
+  }
+
+  // pitched roof with gable ends and chimneys
+  const slope = 0.64;
+  const roofA = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.6, 0.14, 3.2), roofM));
   roofA.rotation.x = -slope;
-  g.add(roofA);
-  const roofB = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, 0.12, 2.4), roofM));
-  roofB.position.set(0, WH + 0.6, D / 4);
+  add(roofA, 0, 6.48, -1.25);
+  const roofB = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.6, 0.14, 3.2), roofM));
   roofB.rotation.x = slope;
-  g.add(roofB);
-  add(new THREE.BoxGeometry(0.4, 0.9, 0.4), std(C.terra, 0.8), 1.2, WH + 1.0, -0.6);
+  add(roofB, 0, 6.48, 1.25);
+  const gableShape = new THREE.Shape();
+  gableShape.moveTo(-hd, 0);
+  gableShape.lineTo(hd, 0);
+  gableShape.lineTo(0, 1.85);
+  gableShape.closePath();
+  const gableGeo = new THREE.ExtrudeGeometry(gableShape, { depth: 0.14, bevelEnabled: false });
+  gableGeo.rotateY(Math.PI / 2);
+  add(shadowed(new THREE.Mesh(gableGeo, stone)), hw - 0.14, 5.55, 0);
+  add(shadowed(new THREE.Mesh(gableGeo, stone)), -hw, 5.55, 0);
+  block(0.6, 2.1, 0.6, stone, 2.3, 6.55, -1.0);
+  block(0.6, 2.1, 0.6, stone, -2.3, 6.55, 1.0);
 
-  // front door and its lit exit sign
-  const door = add(new THREE.BoxGeometry(0.8, 1.5, 0.06), std(C.woodDark, 0.6), 0, 0.75, D / 2 + 0.02);
-  void door;
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.16, 0.05), glow(C.lime, 1.4));
-  sign.position.set(0, 1.62, D / 2 + 0.05);
-  g.add(sign);
+  // portico: four columns, a flat roof and a pediment
+  block(4.2, 0.2, 1.6, trim, 0, 3.0, hd + 0.5);
+  for (const x of [-1.4, -0.5, 0.5, 1.4]) {
+    add(shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 2.6, 20), trim)), x, 1.6, hd + 0.9);
+  }
+  const pedShape = new THREE.Shape();
+  pedShape.moveTo(-2.0, 0);
+  pedShape.lineTo(2.0, 0);
+  pedShape.lineTo(0, 0.9);
+  pedShape.closePath();
+  add(shadowed(new THREE.Mesh(new THREE.ExtrudeGeometry(pedShape, { depth: 0.14, bevelEnabled: false }), stone)), 0, 3.1, hd + 0.9);
+  block(4.6, 0.12, 0.9, trim, 0, 0.36, hd + 1.6);     // front step
 
-  // escape route: from inside the door, out along the path to the meeting point
+  // front door: two leaves, with a lit fanlight above
+  block(0.9, 2.2, 0.1, doorM, -0.48, 1.4, hd + 0.02);
+  block(0.9, 2.2, 0.1, doorM, 0.48, 1.4, hd + 0.02);
+  block(2.0, 0.25, 0.06, litM, 0, 2.7, hd + 0.02);
+
+  // sash windows with sills
+  const win = (x: number, y: number, z: number, ry: number, lit: boolean): void => {
+    const w = new THREE.Group();
+    w.position.set(x, y, z);
+    w.rotation.y = ry;
+    w.add(shadowed(new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.36, 0.1), trim)));
+    const pane = new THREE.Mesh(new THREE.PlaneGeometry(0.76, 1.12), lit ? litM : glassM);
+    pane.position.z = 0.06;
+    w.add(pane);
+    const sill = shadowed(new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.08, 0.22), trim));
+    sill.position.set(0, -0.72, 0.08);
+    w.add(sill);
+    g.add(w);
+  };
+  win(-2.4, 1.5, hd + 0.03, 0, true);
+  for (const sx of [-1, 1]) win(sx * (hw + 1.5), 1.5, 1.63, 0, sx > 0);
+  win(2.4, 1.5, hd + 0.03, 0, false);
+  win(-2.4, 4.2, hd + 0.03, 0, false);
+  win(2.4, 4.2, hd + 0.03, 0, true);
+  for (const z of [-1.2, 1.2]) {
+    win(hw + 0.03, 1.5, z, Math.PI / 2, false);
+    win(hw + 0.03, 4.2, z, Math.PI / 2, z > 0);
+    win(-hw - 0.03, 1.5, z, -Math.PI / 2, false);
+    win(-hw - 0.03, 4.2, z, -Math.PI / 2, false);
+  }
+
+  // hedges along the front and corners
+  for (const [x, z] of [[-4.6, 3.6], [4.6, 3.6], [-6.8, 3.6], [6.8, 3.6], [-6.8, 2.2], [6.8, 2.2]] as [number, number][]) {
+    add(shadowed(new THREE.Mesh(rbox(0.9, 0.7, 0.9, 0.2), hedgeM)), x, 0.35, z);
+  }
+
+  // stone path from the portico down to the meeting point
+  block(1.4, 0.06, 4.2, pathM, 0, 0.03, 5.2);
+
+  // escape route: out of the front door, straight down the path to the meeting point
   const routeCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0.14, D / 2 - 0.3),
-    new THREE.Vector3(0, 0.14, D / 2 + 0.6),
-    new THREE.Vector3(0, 0.14, 3.6),
-    new THREE.Vector3(0.9, 0.14, 4.2),
-    new THREE.Vector3(2.2, 0.14, 4.4)
+    new THREE.Vector3(0, 0.14, hd + 0.4),
+    new THREE.Vector3(0, 0.14, 4.2),
+    new THREE.Vector3(0, 0.14, 5.6),
+    new THREE.Vector3(0, 0.14, 6.9)
   ]);
   const routeMat = glow(C.peach, 1.1);
   g.add(new THREE.Mesh(new THREE.TubeGeometry(routeCurve, 200, 0.04, 10, false), routeMat));
   const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), glow(0xffffff, 2));
   g.add(pulse);
 
-  // meeting point outside: a disc, a pin and a glowing marker
-  const disc = add(new THREE.CylinderGeometry(0.5, 0.5, 0.02, 40), std(C.tile, 0.9), 2.2, 0.01, 4.4);
-  void disc;
-  add(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 10), std(C.metal, 0.5), 2.2, 0.31, 4.4);
-  const marker = add(new THREE.SphereGeometry(0.09, 16, 12), glow(C.mint, 1.6), 2.2, 0.66, 4.4);
+  // meeting point at the end of the path: disc, pin and glowing marker
+  block(1.1, 0.02, 1.1, std(C.tile, 0.9), 0, 0.01, 6.9);
+  block(0.04, 0.7, 0.04, std(C.metal, 0.5), 0, 0.36, 6.9);
+  const marker = add(shadowed(new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), glow(C.mint, 1.6))), 0, 0.74, 6.9);
 
   anim.push((t) => {
     pulse.position.copy(routeCurve.getPointAt((((t * 0.12) % 1) + 1) % 1));
     routeMat.emissiveIntensity = 0.9 + 0.3 * Math.sin(t * 2);
-    sign.scale.x = 1 + 0.04 * Math.sin(t * 2.4);
+    litM.emissiveIntensity = 0.35 + 0.08 * Math.sin(t * 1.3);
     marker.scale.setScalar(1 + 0.06 * Math.sin(t * 1.8));
   });
 
@@ -498,9 +545,9 @@ export function buildHouse(): Spec {
     group: g,
     anim,
     assemble: () => {},
-    fit: 0.78,
+    fit: 0.8,
     offset: [0, 0, 0],
-    camPos: [7.2, 6.4, 9.0],
-    camLook: [0, 1.2, 1.2]
+    camPos: [11, 8.5, 13],
+    camLook: [0, 2.6, 1]
   };
 }
