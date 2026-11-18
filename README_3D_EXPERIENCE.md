@@ -4,10 +4,14 @@ The root page (`index.html`) is now an immersive, full-screen 3D introduction in
 
 ## What changed
 
-- `index.html`: new 3D-first RescueSphere landing experience.
-- `public/rescuesphere-3d.html`: standalone copy of the experience for direct preview.
-- `app.html`: preserves the original interactive RescueSphere application entry point.
-- `vite.config.ts`: builds both the landing page and the app as separate HTML entries.
+- `index.html`: the landing page. It loads `src/landing/landing.ts` as a module.
+- `src/landing/models.ts`: eight 3D models, one per section: glossy core with petal blades (hero), exit door with an escape route, furnished room (shadows on), cubes, torus knot, orbit rings, helix path, crystal cluster.
+- `src/landing/stage.ts`: one full-page three.js stage. The model for the section in view eases in; the previous one shrinks away. Each change fires a particle burst and a shockwave ring, and the camera glides to that model's viewpoint with a short shake. A live cursor orb follows the pointer through the 3D space. The planner button zooms the camera in before navigating.
+- `src/landing/effects.ts`: letter-by-letter reveals, scroll progress, cursor spotlight, tilting cards, magnetic buttons, parallax headings, FAQ accordion, reveal on scroll, and the transition into the planner.
+- `src/styles/landing.css`: landing styles, including the planner button and the warp overlay.
+- `app.html`: the original room-planning application, unchanged.
+
+Three.js comes from npm (`three` 0.180), so no CDN is needed for the 3D.
 
 ## Run locally
 

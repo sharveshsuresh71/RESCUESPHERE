@@ -1,22 +1,27 @@
-# RescueSphere template (Flashform-style, with 3D and effects)
+# RescueSphere
 
-Files
-- index.html: all sections and copy
-- styles.css: colours, type and layout. Change the variables at the top of :root to re-theme.
-- script.js: petal burst animation, FAQ accordion, scroll reveal, demo sign-up.
+A 3D landing page and a room-planning app, built with Vite, TypeScript, and three.js.
 
-Use it
-1. Unzip, then open index.html in any browser. No build step.
-2. Replace the copy in index.html with your own.
-3. Connect the sign-up form (#joinForm) to your email service. The demo only shows a message.
+- Landing page (`index.html`): full-page 3D stage with one model per section, transitions, live cursor, and scroll effects.
+- Planner (`app.html`): the room-planning workspace.
 
-Notes
-- Fonts load from Google Fonts. Work offline and the page falls back to system fonts.
-- The petal animation is drawn on a canvas and stops when off-screen. It is still under reduced motion.
-- Room safety copy is a planning aid. Verify dimensions with a tape measure.
+## Setup
 
-3D and effects
+```bash
+npm install
+npm run dev        # http://localhost:5173 (landing) and /app.html (planner)
+npm run build      # typecheck + production build into dist/
+npm run preview    # serve the built site
+```
+
+## 3D and effects
+
 - One full-page three.js stage. Each section has its own 3D model that grows in as you scroll to it.
 - 3D room: scroll orbits the camera; the escape route pulses toward the exit.
 - Effects: letter reveals, scroll progress bar, cursor spotlight, tilting cards, magnetic buttons, parallax headings.
-- three.js loads from cdnjs (r128). Needs internet on first load.
+- three.js comes from npm (`three` 0.180), so no CDN is needed.
+
+## Notes
+
+- Preparedness aid only. It does not replace official emergency instructions or certified safety systems.
+- Room dimensions and photos stay in the browser.

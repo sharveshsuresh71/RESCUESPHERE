@@ -1,0 +1,203 @@
+/* RescueSphere template: dark olive base, lime type, italic serif accents.
+   Edit the variables in :root to re-theme the whole page. */
+:root{
+  --bg:#111508;
+  --bg-2:#1a1e10;
+  --lime:#b3e04a;
+  --lime-ink:#111508;
+  --mint:#46c489;
+  --peach:#f0a06a;
+  --line:rgba(179,224,74,.35);
+  --sans:'Inter Tight',system-ui,sans-serif;
+  --serif:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--lime);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+em{font-family:var(--serif);font-style:italic;font-weight:300}
+ul,ol{list-style:none}
+
+/* nav */
+.nav-wrap{position:sticky;top:0;z-index:20;padding:14px 22px;background:var(--bg)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:20px;background:var(--bg-2);border-radius:12px;padding:14px 22px;font-size:14px}
+.brand{display:inline-flex;align-items:center;gap:8px;font-size:17px;font-weight:400;color:var(--lime)}
+.links{display:flex;gap:26px;text-transform:uppercase;font-size:13px;letter-spacing:.02em}
+.links a:hover{text-decoration:underline}
+.pill{border:1px solid var(--lime);border-radius:999px;padding:8px 16px;font-size:13px;text-transform:uppercase}
+.pill:hover{background:var(--lime);color:var(--lime-ink)}
+
+/* hero */
+.hero{position:relative;min-height:88vh;padding:70px 28px 40px;overflow:hidden}
+.hero-title{font-weight:300;font-size:clamp(64px,10vw,150px);line-height:.95;letter-spacing:-.03em;position:relative;z-index:2}
+.hero-title .line{display:block;opacity:0;transform:translateY(30px);animation:rise .9s ease forwards}
+.hero-title .line:nth-child(2){animation-delay:.15s}
+.hero-title em{color:var(--lime)}
+.hero-small{position:absolute;right:28px;top:60px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;max-width:220px;text-align:right;z-index:2}
+.hero-foot{position:absolute;right:28px;bottom:36px;font-family:var(--serif);font-size:clamp(34px,5vw,70px);z-index:2}
+.hero-note{position:absolute;left:28px;bottom:36px;max-width:280px;font-size:12px;text-transform:uppercase;line-height:1.5;z-index:2}
+.petals{position:absolute;left:38%;top:12%;width:min(560px,70vw);height:min(560px,70vw);z-index:1;pointer-events:none}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* huge headings */
+.huge{font-weight:300;font-size:clamp(90px,15vw,240px);line-height:.85;letter-spacing:-.04em;text-align:center;padding:60px 28px 30px}
+.huge.small{font-size:clamp(56px,7vw,110px);text-align:left;padding:0}
+.huge em{font-size:1em}
+
+/* how */
+.how{padding:40px 28px 60px}
+.how .huge{text-align:left;padding:0 0 40px}
+.steps{border-top:1px solid var(--line)}
+.steps li{display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid var(--line);padding:18px 0;font-size:clamp(20px,2.6vw,34px);text-transform:uppercase;letter-spacing:-.01em}
+.steps .n{font-size:13px;text-transform:none;letter-spacing:0}
+.steps .t{text-align:right}
+
+/* benefits */
+.benefits{padding:80px 28px}
+.kicker{font-size:clamp(28px,4vw,56px);margin-bottom:50px;font-weight:300;letter-spacing:-.02em}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{background:var(--lime);color:var(--lime-ink);border-radius:14px;padding:22px;min-height:340px;display:flex;flex-direction:column;justify-content:space-between}
+.card p{font-size:14px;line-height:1.5;font-weight:400}
+.card h3{font-weight:300;font-size:clamp(28px,3vw,42px);line-height:1;letter-spacing:-.02em}
+.card.c2{margin-top:70px}
+.card.c4{margin-top:70px}
+
+/* problems */
+.problems{padding:70px 22px}
+.problems-inner{background:var(--lime);color:var(--lime-ink);border-radius:20px;padding:70px 60px;display:grid;grid-template-columns:1fr 1.1fr;gap:50px;align-items:start}
+.problems .huge.small{color:var(--lime-ink);font-size:clamp(60px,7.5vw,116px)}
+.problems .huge.small span{display:block}
+.problem{border-bottom:1px solid rgba(17,21,8,.5);padding:22px 0}
+.problem h3{font-weight:400;font-size:clamp(22px,2.4vw,32px);letter-spacing:-.01em;margin-bottom:10px}
+.problem p{font-size:15px;line-height:1.5;font-weight:400}
+
+/* faq */
+.faq{padding:60px 28px 80px}
+.faq-title{font-size:clamp(120px,22vw,340px);padding:0 0 40px;letter-spacing:-.05em}
+.faq-title span{font-family:var(--sans)}
+.faq-title em{font-family:var(--serif);font-weight:300}
+.accordion{border-top:1px solid var(--line)}
+.accordion li{border-bottom:1px solid var(--line)}
+.q{width:100%;display:grid;grid-template-columns:70px 1fr 40px;align-items:center;background:none;border:0;color:var(--lime);font:inherit;font-size:clamp(18px,2vw,26px);text-align:left;padding:20px 0;cursor:pointer}
+.q .num{font-size:18px}
+.q .ic{text-align:right;font-size:22px}
+.a{display:none;padding:0 0 22px 70px;font-size:16px;line-height:1.5;max-width:720px}
+.accordion li.open .a{display:block}
+
+/* roadmap */
+.roadmap{padding:80px 28px}
+.rm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;flex-wrap:wrap;margin-bottom:60px}
+.rm-title{font-weight:300;font-size:clamp(70px,10vw,160px);line-height:.9;letter-spacing:-.03em}
+.rm-title em{color:var(--lime)}
+.rm-sub{max-width:300px;font-size:13px;text-transform:uppercase;line-height:1.5}
+.rm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid var(--line);padding-top:30px}
+.rm-item{display:flex;flex-direction:column;gap:6px}
+.rm-mon{font-size:18px}
+.rm-day{font-weight:700;font-size:clamp(90px,12vw,190px);line-height:.9;letter-spacing:-.04em}
+.rm-label{font-size:13px}
+
+/* footer */
+.footer{padding:80px 28px 30px;border-top:1px solid var(--line)}
+.marquee-letters{font-size:clamp(70px,14vw,220px);line-height:.9;letter-spacing:-.04em;display:flex;flex-wrap:wrap;gap:0 .15em;margin-bottom:60px;text-transform:uppercase;font-weight:700}
+.marquee-letters span{display:inline-block;animation:wobble 6s ease-in-out infinite}
+.marquee-letters em{font-weight:300;display:inline-block;animation:wobble 6s ease-in-out infinite reverse}
+.marquee-letters span:nth-child(2){animation-delay:.6s}
+.marquee-letters em:nth-child(4){animation-delay:1.2s}
+@keyframes wobble{0%,100%{transform:rotate(0)}50%{transform:rotate(-6deg) translateY(-6px)}}
+.foot-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;padding:30px 0;border-top:1px solid var(--line);font-size:15px}
+.foot-cols h4{font-weight:400;text-transform:uppercase;font-size:14px;margin-bottom:12px}
+.join-form{display:flex;border-bottom:1px solid var(--lime);padding-bottom:8px;gap:10px}
+.join-form input{flex:1;background:none;border:0;color:var(--lime);font:inherit;outline:none}
+.join-form input::placeholder{color:rgba(179,224,74,.6);text-transform:uppercase}
+.join-form button{background:none;border:0;color:var(--lime);font:inherit;cursor:pointer}
+.join-msg{margin-top:8px;font-size:14px}
+.legal{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;margin-top:20px}
+.legal a{text-decoration:underline}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .8s ease,transform .8s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* responsive */
+@media (max-width:960px){
+  .links{display:none}
+  .cards{grid-template-columns:1fr 1fr}
+  .card.c2,.card.c4{margin-top:0}
+  .problems-inner{grid-template-columns:1fr;padding:40px 28px}
+  .rm-grid,.foot-cols{grid-template-columns:1fr}
+  .hero-small{position:static;text-align:left;margin:30px 0 0}
+  .petals{left:auto;right:-10%;top:auto;bottom:0;width:70vw;height:70vw}
+}
+@media (max-width:600px){
+  .cards{grid-template-columns:1fr}
+  .steps li{flex-direction:column;align-items:flex-start}
+  .steps .t{text-align:left}
+  .q{grid-template-columns:44px 1fr 28px}
+  .a{padding-left:44px}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero-title .line{opacity:1;transform:none;animation:none}
+  .marquee-letters span,.marquee-letters em{animation:none}
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+/* ---------- 3D + special effects ---------- */
+.progress{position:fixed;top:0;left:0;height:3px;width:100%;background:var(--lime);transform:scaleX(0);transform-origin:0 50%;z-index:50}
+.spot{position:fixed;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(179,224,74,.10),rgba(179,224,74,0) 60%);z-index:0;transition:opacity .4s}
+@media (hover:none){.spot{display:none}}
+
+/* hero 3D canvas is larger and sits behind the text */
+.hero .petals{left:36%;top:6%;width:min(680px,72vw);height:min(680px,72vw);z-index:1}
+
+/* split text: letters rise in one by one */
+.ch{display:inline-block;transform:translateY(60%);opacity:0;animation:chIn .7s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i) * 28ms)}
+@keyframes chIn{to{transform:none;opacity:1}}
+[data-split].split-ready{display:block}
+
+/* 3D room */
+.room3d{position:relative;height:110vh;margin:40px 0 0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#1c2412,#0b0d06 75%)}
+.room3d canvas{position:sticky;top:0;width:100%;height:100vh;display:block}
+.room-caption{position:absolute;left:28px;top:12vh;max-width:380px;z-index:2;pointer-events:none}
+.room-title{font-weight:300;font-size:clamp(48px,6vw,96px);line-height:.95;letter-spacing:-.03em}
+.room-title em{color:var(--lime)}
+.room-caption p{margin-top:16px;font-size:15px;line-height:1.5;color:#d6e6a3;max-width:320px}
+.room-legend{position:absolute;right:28px;bottom:28px;display:flex;gap:18px;font-size:13px;text-transform:uppercase;z-index:2}
+.room-legend span{display:inline-flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot.lime{background:var(--lime)} .dot.peach{background:var(--peach)} .dot.mint{background:var(--mint)}
+
+/* tilt cards and magnetic buttons */
+.tilt{transform-style:preserve-3d;transition:transform .25s ease,opacity .8s ease}
+.magnetic{transition:transform .3s cubic-bezier(.2,.7,.2,1),background .2s,color .2s}
+
+/* the hero title no longer needs the old line animation; letters do it */
+.hero-title .line{animation:none;opacity:1;transform:none}
+
+@media (max-width:960px){
+  .hero .petals{left:auto;right:-14%;top:auto;bottom:-4%;width:82vw;height:82vw}
+  .room-legend{display:none}
+  .room-caption{top:8vh}
+}
+@media (prefers-reduced-motion:reduce){
+  .ch{animation:none;opacity:1;transform:none}
+  .room3d canvas{position:relative;height:70vh}
+}
+
+/* ---------- full-page 3D stage ---------- */
+#stage3d{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+main{position:relative;z-index:1}
+.hero,.how,.benefits,.faq,.roadmap{background:transparent}
+.room3d{height:100vh;background:none;margin:0}
+.room3d canvas{display:none}
+.hero-title,.hero-note,.hero-small,.hero-foot{text-shadow:0 2px 24px rgba(0,0,0,.35)}
+
+/* ---------- planner call to action and transition ---------- */
+.cta{display:inline-flex;align-items:center;gap:10px;margin-top:22px;background:var(--lime);color:var(--lime-ink);padding:14px 22px;border-radius:999px;font-weight:500;font-size:15px;position:relative;z-index:3}
+.cta:hover{background:#c8ef63}
+
+/* the warp: a radial flash that covers the page before navigating into the planner */
+.warp{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(179,224,74,.0) 0%,rgba(179,224,74,.0) 20%,#0b0d06 75%);transform:scale(1.4);transition:opacity .6s ease,transform .9s cubic-bezier(.6,0,.2,1)}
+.is-warping .warp{opacity:1;transform:scale(1)}
+.is-warping main,.is-warping .nav-wrap{transition:opacity .5s ease,filter .5s ease;opacity:.2;filter:blur(3px)}
+#stage3d{transition:opacity .6s ease}
+.is-warping #stage3d{opacity:0}
