@@ -253,7 +253,7 @@ main{position:relative;z-index:1}
 .rf-auto{position:absolute;z-index:3;top:20px;right:28px;display:inline-flex;align-items:center;gap:8px;border:0;background:none;color:#111508;font:600 12px var(--sans);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .rf-ring{width:14px;height:14px;border-radius:50%;border:1.5px solid #111508;background:#111508;display:inline-block}
 .rf-auto.is-off .rf-ring{background:none}
-.rf-count{position:absolute;z-index:3;top:70px;right:28px;margin:0;font-weight:700;font-size:clamp(64px,9vw,140px);line-height:.9;letter-spacing:-.02em;color:transparent;-webkit-text-stroke:1.5px #111508}
+.rf-count{position:absolute;z-index:3;top:120px;right:28px;margin:0;font-weight:700;font-size:clamp(64px,9vw,140px);line-height:.9;letter-spacing:-.02em;color:transparent;-webkit-text-stroke:1.5px #111508}
 .rf-next{position:absolute;z-index:3;top:50%;right:28px;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;border:0;background:#fff;color:#111508;box-shadow:0 6px 20px rgba(40,28,60,.12);display:grid;place-items:center;cursor:pointer;transition:transform .2s}
 .rf-next:hover{transform:translateY(-50%) scale(1.08)}
 .rf-next:active{transform:translateY(-50%) scale(.94)}
@@ -279,7 +279,7 @@ main{position:relative;z-index:1}
 @media (max-width:820px){
   .rf-kicker{left:16px}
   .rf-auto{right:16px;top:18px}
-  .rf-count{top:64px;right:16px;font-size:60px}
+  .rf-count{top:112px;right:16px;font-size:60px}
   .rf-next{top:auto;bottom:210px;right:16px;transform:none}
   .rf-next:hover{transform:scale(1.08)}
   .rf-next:active{transform:scale(.94)}
