@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RescueSphere — Plan it. Protect it.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cream:#e7e1db; --ink:#241a16; --violet:#2b1d63; --violet-2:#4a33b8; --night:#0b0d22;
+    --accent:#8a70ff; --teal:#3fd3c0; --amber:#f0a84a; --paper:#f6f2ee;
+    --sans:'Inter Tight',system-ui,sans-serif; --serif:'Fraunces',Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);color:var(--ink);background:var(--cream);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;color:var(--ink);mix-blend-mode:normal}
+  .nav .logo{font:italic 500 26px var(--serif);letter-spacing:-.01em}
+  .nav ul{display:flex;gap:26px;list-style:none;font-size:15px;font-weight:500}
+  .nav .cta{background:var(--violet-2);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600}
+  .nav.on-dark{color:#f3efff}
+  .nav.on-dark .cta{background:var(--accent)}
+
+  /* hero */
+  .hero{position:relative;min-height:100vh;padding:120px 28px 60px;overflow:hidden;background:var(--cream)}
+  .hero h1{font-weight:800;font-size:clamp(64px,15vw,230px);line-height:.86;letter-spacing:-.045em;text-transform:uppercase}
+  .hero h1 span{display:block}
+  .hero .sub{position:absolute;right:28px;top:50%;transform:translateY(-50%);width:min(380px,36vw);background:rgba(255,255,255,.62);backdrop-filter:blur(10px);border-radius:14px;padding:18px 18px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+  .hero .stage{position:absolute;left:50%;bottom:-6vh;transform:translateX(-50%);width:min(560px,80vw);aspect-ratio:1;pointer-events:none}
+  .hero .stage canvas{width:100%;height:100%;display:block}
+  .hero .note{position:absolute;left:28px;bottom:28px;font:400 14px var(--serif);font-style:italic;max-width:300px;color:#4b3f3a}
+
+  /* marquee */
+  .marquee{background:var(--ink);color:var(--paper);overflow:hidden;white-space:nowrap;padding:18px 0;font-weight:700;font-size:clamp(22px,3.2vw,40px);letter-spacing:-.02em;text-transform:uppercase}
+  .marquee div{display:inline-block;animation:slide 22s linear infinite;padding-left:40px}
+  @keyframes slide{to{transform:translateX(-50%)}}
+  .marquee span{margin-right:40px}
+  .marquee em{font:italic 300 1em var(--serif);text-transform:none;color:var(--teal)}
+
+  /* product section (violet) */
+  .product{background:var(--violet);color:#f5f1ff;padding:110px 28px;position:relative}
+  .product .head{font:300 italic clamp(70px,11vw,170px)/0.9 var(--serif);letter-spacing:-.03em}
+  .product .grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin-top:50px}
+  .product .stage2{position:relative;aspect-ratio:1;max-width:520px;justify-self:center;width:100%}
+  .product .stage2 canvas{width:100%;height:100%;display:block;transition:opacity .4s}
+  .product .stage2.swap canvas{opacity:.15}
+  .card{background:#f5f1ff;color:var(--ink);border-radius:14px;padding:18px;display:flex;gap:16px;align-items:center;max-width:380px;box-shadow:0 14px 40px rgba(0,0,0,.25)}
+  .card .thumb{width:86px;height:86px;border-radius:10px;flex:0 0 86px;display:grid;place-items:center;background:linear-gradient(160deg,#fff,#e8e2ff)}
+  .card .thumb i{display:block;width:44px;height:44px;border-radius:50%}
+  .card .meta{flex:1}
+  .card .meta b{display:block;font-weight:700;font-size:17px}
+  .card .meta small{color:#6a5e7c;font-size:13px}
+  .card .row{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .card .price{font-weight:700;font-size:18px}
+  .card button{background:var(--ink);color:#fff;border:0;border-radius:999px;padding:9px 16px;font:600 13px var(--sans);cursor:pointer}
+  .swatches{display:flex;gap:12px;margin-top:28px}
+  .swatches button{width:58px;height:58px;border-radius:12px;border:2px solid transparent;cursor:pointer;background:none;padding:4px}
+  .swatches button i{display:block;width:100%;height:100%;border-radius:8px}
+  .swatches button[aria-pressed="true"]{border-color:#fff}
+  .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px;border-top:1px solid rgba(255,255,255,.2);padding-top:24px}
+  .facts small{display:block;color:#c9bfe8;font-size:13px}
+  .facts b{font:400 italic 26px var(--serif)}
+
+  /* feature rows (night) */
+  .features{background:var(--night);color:#eee9ff;padding:100px 28px}
+  .features h2{font:300 clamp(48px,7vw,110px)/.95 var(--serif);letter-spacing:-.02em;margin-bottom:50px}
+  .frow{border-top:1px solid rgba(238,233,255,.18);padding:34px 0;display:grid;grid-template-columns:1.1fr 1fr;gap:30px;align-items:start}
+  .frow:last-child{border-bottom:1px solid rgba(238,233,255,.18)}
+  .frow h3{font:400 clamp(34px,4.6vw,64px)/1 var(--serif);letter-spacing:-.01em}
+  .frow p{font-size:17px;line-height:1.55;color:#b9b2d6;max-width:440px}
+  .frow .tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;display:block}
+
+  /* quotes (cream) */
+  .quotes{background:var(--paper);padding:100px 28px}
+  .quotes h2{font:800 clamp(56px,10vw,160px)/.86 var(--sans);letter-spacing:-.045em;text-transform:uppercase;margin-bottom:50px}
+  .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .qcard{background:#fff;border-radius:16px;padding:26px;box-shadow:0 8px 24px rgba(36,26,22,.06)}
+  .qcard p{font:400 italic 22px/1.35 var(--serif)}
+  .qcard small{display:block;margin-top:18px;color:#7a6c64;font-size:14px}
+  .qcard .stars{color:var(--violet-2);letter-spacing:3px;font-size:14px;margin-bottom:10px}
+
+  /* footer */
+  footer{background:var(--night);color:#cfc8ea;padding:70px 28px 40px}
+  footer .big{font:800 clamp(60px,14vw,210px)/.8 var(--sans);letter-spacing:-.05em;text-transform:uppercase;color:#fff}
+  footer .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:50px;font-size:15px}
+  footer .cols h4{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8a80b3;margin-bottom:12px;font-weight:600}
+  footer form{display:flex;gap:10px;margin-top:10px}
+  footer input{flex:1;background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:12px 14px;border-radius:999px;font:inherit}
+  footer button{background:var(--accent);color:#fff;border:0;border-radius:999px;padding:0 20px;font-weight:600;cursor:pointer}
+  footer .legal{margin-top:50px;font-size:13px;color:#8a80b3}
+
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:900px){
+    .nav ul{display:none}
+    .hero .sub{position:relative;right:auto;top:auto;transform:none;width:100%;margin-top:300px}
+    .product .grid,.qgrid,footer .cols{grid-template-columns:1fr}
+    .frow{grid-template-columns:1fr}
+    .facts{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){ .marquee div{animation:none} .reveal{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <span class="logo">RescueSphere</span>
+  <ul><li><a href="#plan">Plan</a></li><li><a href="#scan">Scan</a></li><li><a href="#safety">Safety</a></li><li><a href="#stories">Stories</a></li></ul>
+  <a class="cta" href="#subscribe">Get started</a>
+</nav>
+
+<header class="hero" id="top">
+  <h1 class="reveal in"><span>Plan it.</span><span>Protect it.</span></h1>
+  <div class="stage" aria-hidden="true"><canvas id="heroSphere"></canvas></div>
+  <aside class="sub reveal in">
+    <small style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#6b5d56">New · Room photo + scanner</small>
+    <h3 style="font:400 28px/1.1 var(--serif);margin:8px 0 10px">Your room, mapped in 15 seconds.</h3>
+    <p style="font-size:14px;line-height:1.5;color:#4d4039">Upload a photo or scan the floor, then place doors, windows and furniture. Every plan is checked for a clear escape route.</p>
+  </aside>
+  <p class="note">A simple plan for every room, checked before you need it.</p>
+</header>
+
+<div class="marquee" aria-hidden="true"><div>
+  <span>Plan it</span><em>with care</em><span>Scan the floor</span><em>in 15 seconds</em><span>Protect the exit</span><em>every time</em>
+  <span>Plan it</span><em>with care</em><span>Scan the floor</span><em>in 15 seconds</em><span>Protect the exit</span><em>every time</em>
+</div></div>
+
+<section class="product" id="plan">
+  <h2 class="head reveal">Living room</h2>
+  <div class="grid">
+    <div>
+      <div class="card reveal" id="card">
+        <div class="thumb"><i id="cardDot" style="background:#8a70ff"></i></div>
+        <div class="meta">
+          <b id="cardName">Violet Layout</b>
+          <small id="cardSub">Living room · 5.0 × 6.0 m</small>
+          <div class="row"><span class="price">Free</span><button id="cardBtn">Open plan</button></div>
+        </div>
+      </div>
+      <div class="swatches" role="group" aria-label="Choose a layout">
+        <button data-c="#8a70ff" data-n="Violet Layout" data-s="Living room · 5.0 × 6.0 m" aria-pressed="true"><i style="background:#8a70ff"></i></button>
+        <button data-c="#3fd3c0" data-n="Teal Layout" data-s="Bedroom · 3.5 × 4.0 m" aria-pressed="false"><i style="background:#3fd3c0"></i></button>
+        <button data-c="#f0a84a" data-n="Amber Layout" data-s="Studio · 4.0 × 5.0 m" aria-pressed="false"><i style="background:#f0a84a"></i></button>
+      </div>
+    </div>
+    <div class="stage2" id="stage2"><canvas id="prodSphere"></canvas></div>
+  </div>
+  <div class="facts reveal">
+    <div><small>Scan time</small><b>15 seconds</b></div>
+    <div><small>Escape routes checked</small><b>Every plan</b></div>
+    <div><small>Photos stored</small><b>This browser only</b></div>
+  </div>
+</section>
+
+<section class="features" id="safety">
+  <h2 class="reveal">Built around the exit.</h2>
+  <div class="frow reveal"><div><span class="tag">Step 01</span><h3>Room photo</h3></div><p>Upload a picture of the room for reference. It stays in your browser and is never sent anywhere.</p></div>
+  <div class="frow reveal" id="scan"><div><span class="tag">Step 02</span><h3>Floor scanner</h3></div><p>On a compatible headset, scan the visible floor and review the estimated size before you plan.</p></div>
+  <div class="frow reveal"><div><span class="tag">Step 03</span><h3>Escape route</h3></div><p>Draw the path from the bed to the exit. Blocked routes are flagged so you can move the furniture.</p></div>
+  <div class="frow reveal"><div><span class="tag">Step 04</span><h3>Safety check</h3></div><p>Every layout is checked against the doors and windows you add. Verify the dimensions with a tape measure.</p></div>
+</section>
+
+<section class="quotes" id="stories">
+  <h2 class="reveal">Calm, clear, checked.</h2>
+  <div class="qgrid">
+    <article class="qcard reveal"><div class="stars">★★★★★</div><p>“I finally know where my exit is, and the plan took me five minutes.”</p><small>Amara K. · Apartment owner</small></article>
+    <article class="qcard reveal"><div class="stars">★★★★★</div><p>“The route check caught a blocked door I had never noticed.”</p><small>Daniel R. · Family home</small></article>
+    <article class="qcard reveal"><div class="stars">★★★★★</div><p>“Simple enough for my parents to use. That is the whole point.”</p><small>Priya S. · Caregiver</small></article>
+  </div>
+</section>
+
+<footer id="subscribe">
+  <div class="big">Get ready.<br/>Stay ready.</div>
+  <div class="cols">
+    <div><h4>Get the plan</h4><p>Start a free room plan in under a minute.</p></div>
+    <div><h4>Stay in touch</h4><form id="subForm"><input type="email" placeholder="Your email address" aria-label="Email address" required /><button type="submit">Join</button></form><p id="subMsg" style="margin-top:8px;font-size:14px"></p></div>
+    <div><h4>Support</h4><p>hello@rescuesphere.example</p></div>
+  </div>
+  <p class="legal">© 2026 RescueSphere. Dimensions are estimates; verify with a tape measure.</p>
+</footer>
+
+<script>
+/* Sphere renderer: a lit, glossy sphere on 2D canvas with a moving highlight.
+   Hero uses violet; the product block swaps colour with a short fade. */
+function makeSphere(canvas, color){
+  const g=canvas.getContext('2d'); const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w,h,dpr,c=color,target=color,mix=1,t0=performance.now();
+  function size(){ dpr=Math.min(devicePixelRatio||1,2); w=canvas.clientWidth; h=canvas.clientHeight; canvas.width=w*dpr; canvas.height=h*dpr; g.setTransform(dpr,0,0,dpr,0,0); }
+  const rgb=hex=>[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];
+  function shade(hex,k){ const [r,gg,b]=rgb(hex); return 'rgb('+Math.round(r*k)+','+Math.round(gg*k)+','+Math.round(b*k)+')'; }
+  function tint(hex,k){ const [r,gg,b]=rgb(hex); return 'rgb('+Math.min(255,Math.round(r+(255-r)*k))+','+Math.min(255,Math.round(gg+(255-gg)*k))+','+Math.min(255,Math.round(b+(255-b)*k))+')'; }
+  function draw(now){
+    if(!reduce) requestAnimationFrame(draw);
+    const t=reduce?0:(now-t0)/1000;
+    if(mix<1){ mix=Math.min(1,mix+.04); if(mix>=1) c=target; }
+    g.clearRect(0,0,w,h);
+    const R=Math.min(w,h)*.36, cx=w/2, cy=h/2+Math.sin(t*.8)*h*.015;
+    const halo=g.createRadialGradient(cx,cy,R*.9,cx,cy,R*1.9);
+    halo.addColorStop(0,c.startsWith('#')?c+'66':'rgba(138,112,255,.4)'); halo.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=halo; g.fillRect(0,0,w,h);
+    const hx=Math.cos(t*.3)*.35, hy=-.4+Math.sin(t*.4)*.08;
+    const body=g.createRadialGradient(cx+R*hx,cy+R*hy,R*.05,cx,cy,R);
+    body.addColorStop(0,tint(c,.85)); body.addColorStop(.35,c); body.addColorStop(.8,shade(c,.45)); body.addColorStop(1,shade(c,.18));
+    g.beginPath(); g.arc(cx,cy,R,0,Math.PI*2); g.fillStyle=body; g.fill();
+    g.save(); g.translate(cx,cy); g.rotate(-.3+Math.sin(t*.25)*.05); g.scale(1,.26);
+    g.beginPath(); g.arc(0,0,R*1.45,0,Math.PI*2); g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=1.4/.26; g.stroke(); g.restore();
+  }
+  size(); addEventListener('resize',size); requestAnimationFrame(draw);
+  return { setColor(hex){ target=hex; c=hex; mix=1; } };
+}
+const hero=makeSphere(document.getElementById('heroSphere'),'#8a70ff');
+const prod=makeSphere(document.getElementById('prodSphere'),'#8a70ff');
+
+/* product swatches: change colour, name, and the card */
+const stage2=document.getElementById('stage2');
+document.querySelectorAll('.swatches button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.swatches button').forEach(b=>b.setAttribute('aria-pressed','false'));
+    btn.setAttribute('aria-pressed','true');
+    stage2.classList.add('swap');
+    setTimeout(()=>{ prod.setColor(btn.dataset.c); stage2.classList.remove('swap'); },220);
+    document.getElementById('cardName').textContent=btn.dataset.n;
+    document.getElementById('cardSub').textContent=btn.dataset.s;
+    document.getElementById('cardDot').style.background=btn.dataset.c;
+  });
+});
+document.getElementById('cardBtn').addEventListener('click',()=>{ location.hash='#scan'; });
+
+/* nav turns light on dark sections */
+const nav=document.getElementById('nav');
+const darkSections=['plan','safety'].map(id=>document.getElementById(id));
+addEventListener('scroll',()=>{
+  const y=nav.offsetHeight/2;
+  const onDark=darkSections.some(s=>{ const r=s.getBoundingClientRect(); return r.top<=y && r.bottom>=y; });
+  nav.classList.toggle('on-dark',onDark);
+},{passive:true});
+
+/* reveal on scroll */
+const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} }),{threshold:.15});
+document.querySelectorAll('.reveal:not(.in)').forEach(el=>io.observe(el));
+
+/* subscribe */
+document.getElementById('subForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  document.getElementById('subMsg').textContent='Thanks. You are on the list.';
+  e.target.reset();
+});
+</script>
+</body>
+</html>
