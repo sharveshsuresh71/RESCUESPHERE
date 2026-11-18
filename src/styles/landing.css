@@ -300,3 +300,8 @@ main{position:relative;z-index:1}
 @media (prefers-reduced-motion:reduce){
   .rf-ch,.rf-cap{animation:none;transition:none}
 }
+
+/* hero text: leaves before the next name rises in */
+.rf-title, .rf-sub { transition: opacity .18s ease, transform .18s ease; }
+.rf-title.is-out { opacity: 0; transform: translateY(-8px); }
+.rf-sub.is-out { opacity: 0; }

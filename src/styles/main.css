@@ -955,16 +955,3 @@ button.primary:focus-visible {
   to { opacity: 0; transform: translateY(-8px); filter: blur(3px); }
 }
 
-/* 3D house on the Exit Mapping screen */
-.house-view {
-  position: relative;
-  width: 100%;
-  height: 340px;
-  margin: 18px 0 8px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, rgba(142, 160, 255, 0.16), rgba(8, 11, 30, 0.35) 70%);
-}
-.house-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
-.house-canvas:active { cursor: grabbing; }

@@ -58,7 +58,7 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const MODEL_KEYS: ModelKey[] = ['core', 'door', 'room', 'cubes', 'knot', 'rings', 'path', 'blocks'];
+  const MODEL_KEYS: ModelKey[] = ['door', 'room', 'cubes', 'knot', 'rings', 'path', 'blocks'];
   const views: SlotView[] = [];
 
   for (const el of slotEls) {
@@ -160,13 +160,16 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
     renderer.setScissorTest(true);
 
     for (const v of views) {
+      const reel = v.el.hasAttribute('data-reel');
       const off = v.el.closest('[data-off]') !== null;
       if (off !== v.offPrev) {
         v.offPrev = off;
         if (off) { v.hoverT = 0; v.tapLock = false; }
       }
       const want = v.visible && !off;
-      v.a += ((want ? 1 : 0) - v.a) * (1 - Math.exp(-dt * (want ? 2.2 : 3.4)));
+      // reel models: quick, clean exit and a slower entrance; other models keep their own timing
+      const rate = reel ? (want ? 2.6 : 6) : (want ? 2.2 : 3.4);
+      v.a += ((want ? 1 : 0) - v.a) * (1 - Math.exp(-dt * rate));
       if (v.a < 0.002) continue;
       const r = v.el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > H) continue;
@@ -189,7 +192,14 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
       v.pivot.position.set(v.panX, v.panY, 0);
       v.hover += (v.hoverT - v.hover) * (1 - Math.exp(-dt * 5));
       v.spec.explode?.(v.hover);
-      v.spec.assemble(easeOut(v.a));
+      if (reel) {
+        // scale in from 86% with no scatter, so the model reads as one clean object
+        v.pivot.scale.setScalar(v.spec.fit * (0.86 + 0.14 * easeOut(v.a)));
+        v.spec.assemble(1);
+      } else {
+        v.pivot.scale.setScalar(v.spec.fit);
+        v.spec.assemble(easeOut(v.a));
+      }
       if (!reduced) for (const fn of v.spec.anim) fn(t);
       renderer.render(v.scene, v.cam);
     }

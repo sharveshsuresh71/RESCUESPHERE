@@ -1,17 +1,18 @@
 /*
- * Stride-style hero reel. Each .rf-item holds one 3D model; only the active item is shown, so the
- * layout-bound stage renders one model at a time and it assembles in on every change.
- * A colour circle grows from the centre behind the model and becomes the new page colour (--flav
- * on :root, which the hero and the pinned section both read). The name rises letter by letter.
+ * Hero reel. One 3D model at a time. Every change runs in the same order:
+ *   1. the title and subtitle fade out and the colour circle starts growing from the centre;
+ *   2. the current model shrinks away (the stage handles this, see data-reel);
+ *   3. after a short pause the new title rises in and the new model scales in.
+ * Nothing overlaps: the next model waits until the previous one is almost gone.
  */
 
-const REVEAL_MS = 900;
-const AUTOPLAY_MS = 3200;
-/* the outgoing model fades out first; the incoming one appears after this pause so they never overlap */
-const SWAP_DELAY_MS = 1000;
+const REVEAL_MS = 800;       // colour circle
+const TEXT_OUT_MS = 180;     // title and subtitle fade out before the new text
+const SWAP_DELAY_MS = 420;   // the outgoing model is nearly gone before the next one starts
+const AUTOPLAY_MS = 3600;    // time with no interaction before the next model
 
-function easeInOut(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function easeInOutSine(t: number): number {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
 }
 
 export function initReel(reduced: boolean): void {
@@ -31,15 +32,16 @@ export function initReel(reduced: boolean): void {
   const countEl: HTMLElement = count;
   const rv: HTMLElement = rvEl;
   const stage: HTMLElement = stageEl;
-
   const root = document.documentElement;
+
   let active = 0;
   let autoOn = !reduced;
   let inView = false;
   let lastAction = performance.now();
   let revealFrame = 0;
-  let swapTimer = 0;
   let pendingColor = '';
+  let textTimer = 0;
+  let swapTimer = 0;
 
   const colorOf = (i: number): string => items[i]?.dataset.color ?? '#b3e04a';
 
@@ -47,10 +49,10 @@ export function initReel(reduced: boolean): void {
     root.style.setProperty('--flav', color);
   }
 
-  function splitTitle(text: string): void {
+  function writeText(it: HTMLElement): void {
     titleEl.textContent = '';
-    titleEl.setAttribute('aria-label', text);
-    [...text].forEach((ch, i) => {
+    titleEl.setAttribute('aria-label', it.dataset.name ?? '');
+    [...(it.dataset.name ?? '')].forEach((ch, i) => {
       const s = document.createElement('span');
       s.className = 'rf-ch';
       s.style.setProperty('--i', String(i));
@@ -58,6 +60,7 @@ export function initReel(reduced: boolean): void {
       s.textContent = ch;
       titleEl.appendChild(s);
     });
+    subEl.textContent = it.dataset.sub ?? '';
   }
 
   function revealTo(color: string): void {
@@ -76,7 +79,7 @@ export function initReel(reduced: boolean): void {
     const start = performance.now();
     const frame = (now: number): void => {
       const t = Math.min(1, (now - start) / REVEAL_MS);
-      rv.style.clipPath = `circle(${(radius * easeInOut(t)).toFixed(1)}px at 50% 50%)`;
+      rv.style.clipPath = `circle(${(radius * easeInOutSine(t)).toFixed(1)}px at 50% 50%)`;
       if (t < 1) {
         revealFrame = requestAnimationFrame(frame);
         return;
@@ -93,25 +96,42 @@ export function initReel(reduced: boolean): void {
     const it = items[idx];
     if (!it) return;
     active = idx;
+    lastAction = performance.now();
+
+    // the outgoing model is switched off now; the stage shrinks it away
     items.forEach((el, j) => { if (j !== idx) el.setAttribute('data-off', ''); });
-    window.clearTimeout(swapTimer);
-    if (instant) {
-      items[idx]?.removeAttribute('data-off');
-    } else {
-      swapTimer = window.setTimeout(() => items[idx]?.removeAttribute('data-off'), SWAP_DELAY_MS);
-    }
-    splitTitle(it.dataset.name ?? '');
-    subEl.textContent = it.dataset.sub ?? '';
     countEl.textContent = String(idx + 1).padStart(2, '0');
     if (!reduced) {
       countEl.animate(
-        [{ transform: 'translateY(14px)', opacity: 0 }, { transform: 'none', opacity: 1 }],
-        { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)' }
+        [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }],
+        { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' }
       );
     }
-    if (instant) setFlavour(colorOf(idx));
-    else revealTo(colorOf(idx));
-    lastAction = performance.now();
+
+    window.clearTimeout(textTimer);
+    window.clearTimeout(swapTimer);
+
+    if (instant) {
+      writeText(it);
+      it.removeAttribute('data-off');
+      setFlavour(colorOf(idx));
+      return;
+    }
+
+    // 1. text leaves and the colour circle starts
+    titleEl.classList.add('is-out');
+    subEl.classList.add('is-out');
+    revealTo(colorOf(idx));
+
+    // 2. the new text rises in once the old text has gone
+    textTimer = window.setTimeout(() => {
+      writeText(it);
+      titleEl.classList.remove('is-out');
+      subEl.classList.remove('is-out');
+    }, reduced ? 0 : TEXT_OUT_MS);
+
+    // 3. the new model scales in after the old one has shrunk away
+    swapTimer = window.setTimeout(() => it.removeAttribute('data-off'), reduced ? 0 : SWAP_DELAY_MS);
   }
 
   next.addEventListener('click', () => show(active + 1));
@@ -155,7 +175,7 @@ export function initReel(reduced: boolean): void {
     inView = true;
   }
 
-  /* autoplay: advance after 3.2 s with no interaction, only while the hero is on screen */
+  /* autoplay: advance after the pause with no interaction, only while the hero is on screen */
   window.setInterval(() => {
     if (!autoOn || !inView || document.hidden) return;
     if (performance.now() - lastAction < AUTOPLAY_MS) return;

@@ -6,7 +6,6 @@ import { buildModels, type ModelKey, type Spec } from '../landing/models';
 
 interface Entry { key: ModelKey; name: string; note: string; about: string }
 const ENTRIES: Entry[] = [
-  { key: 'core', name: 'Hero · Room overview', note: 'Wireframe room with a scan plane and the route to the exit.', about: 'The scan plane sweeps the room height while the route stays fixed to the floor, showing how the plan covers the whole space.' },
   { key: 'door', name: 'How it works · Floor plan', note: 'Route drawn step by step, four markers for the four steps.', about: 'The route draws from the bed toward the exit. Each marker lights when the route passes it, matching the four steps on the page.' },
   { key: 'room', name: 'Room · Furnished layout', note: 'Furniture as a CAD drawing; the exit door is lit.', about: 'A furnished room drawn as edges. The exit door stays lit so it is easy to find on the plan.' },
   { key: 'cubes', name: 'Benefits · Dashboard panels', note: 'Four panels with live bars, matching the card grid.', about: 'Each panel shows a live level meter. The panel edge brightens in turn, like a monitoring dashboard.' },
@@ -74,7 +73,7 @@ function main(): void {
     scene.add(s.group);
   }
 
-  let current: ModelKey = 'core';
+  let current: ModelKey = 'room';
   let playing = true;
   let speed = 1;
   let clock = 0;
