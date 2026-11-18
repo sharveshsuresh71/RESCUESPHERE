@@ -10,7 +10,8 @@ export default defineConfig({
         main: 'index.html',
         app: 'app.html',
         viewer: 'viewer.html',
-        training: 'training.html'
+        training: 'training.html',
+        builder: 'builder.html'
       }
     }
   },

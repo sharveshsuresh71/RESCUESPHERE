@@ -46,6 +46,8 @@ export interface RoomObject {
   widthMeters?: number;
   depthMeters?: number;
   rotationDegrees?: number;
+  /** Where the size came from: measured on a calibrated photo, or typed in by the user. */
+  sizeSource?: 'photo' | 'entered';
 }
 
 export interface ExitMarker {

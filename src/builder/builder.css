@@ -1,0 +1,166 @@
+:root {
+  color-scheme: light;
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: #cbd5e1;
+  --accent: #0f766e;
+  --warn: #b45309;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: #f1f5f9;
+}
+
+body {
+  margin: 0;
+}
+
+.builder {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.75rem;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+section {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.lede,
+.hint {
+  color: var(--muted);
+  margin: 0.25rem 0 0.75rem;
+}
+
+.status {
+  margin: 0.5rem 0 0;
+  min-height: 1.2em;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin: 0.5rem 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.field.inline select,
+.field.inline input,
+.field input[type='file'] {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  min-width: 7rem;
+}
+
+button {
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: #fff;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#save-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.9rem;
+}
+
+legend {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 0 0.3rem;
+}
+
+.photo,
+.plan {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #e2e8f0;
+  margin: 0.5rem 0;
+}
+
+.plan {
+  max-width: 480px;
+}
+
+.items,
+.issues {
+  padding-left: 1.2rem;
+  margin: 0.25rem 0;
+}
+
+.items li {
+  margin-bottom: 0.35rem;
+}
+
+.issues li {
+  color: var(--warn);
+  margin-bottom: 0.25rem;
+}
+
+.items button {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 480px) {
+  .builder {
+    padding: 1rem 0.5rem 2rem;
+  }
+  section {
+    padding: 0.85rem;
+  }
+}

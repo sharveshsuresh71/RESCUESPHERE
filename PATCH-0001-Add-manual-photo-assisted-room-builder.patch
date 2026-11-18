@@ -1,0 +1,1134 @@
+From 9edf992a2718ae93d7ccc6b69b89f1a755084818 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 18 Nov 2026 13:15:26 +0000
+Subject: [PATCH] Add manual photo-assisted room builder
+
+Adds builder.html: upload a photo or video frame, set a scale from two
+clicked points, measure objects, then place furniture and exits on a
+top-down plan. Saves into the existing plan so the route planner uses it.
+
+Nothing is detected automatically. Photo sizes are estimates and are
+marked as such. Exits snap to the nearest wall, and the layout cannot be
+saved until it has at least one exit on a wall and no overlaps or
+out-of-room items.
+
+Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01XCPqYHT7ovgMMpM5jHvnGr
+---
+ builder.html                         | 132 ++++++++
+ src/builder/builder.css              | 166 ++++++++++
+ src/builder/builder.ts               | 443 +++++++++++++++++++++++++++
+ src/builder/layoutGeometry.ts        | 206 +++++++++++++
+ src/core/types.ts                    |   2 +
+ tests/builder/layoutGeometry.test.ts |  96 ++++++
+ vite.config.ts                       |   3 +-
+ 7 files changed, 1047 insertions(+), 1 deletion(-)
+ create mode 100644 builder.html
+ create mode 100644 src/builder/builder.css
+ create mode 100644 src/builder/builder.ts
+ create mode 100644 src/builder/layoutGeometry.ts
+ create mode 100644 tests/builder/layoutGeometry.test.ts
+
+diff --git a/builder.html b/builder.html
+new file mode 100644
+index 0000000..bcea483
+--- /dev/null
++++ b/builder.html
+@@ -0,0 +1,132 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <title>RescueSphere Room Builder</title>
++    <link rel="stylesheet" href="/src/builder/builder.css" />
++  </head>
++  <body>
++    <main class="builder">
++      <header>
++        <h1>Room builder</h1>
++        <p class="lede">
++          Use a photo or video frame as a reference, set a scale, then place furniture and exits on the plan.
++          Every item here is one you placed. Sizes from photos are estimates.
++        </p>
++      </header>
++
++      <section aria-labelledby="step-photo">
++        <h2 id="step-photo">1. Reference photo</h2>
++        <label class="field">
++          Photo or short video
++          <input id="file-input" type="file" accept="image/*,video/*" />
++        </label>
++        <div id="video-controls" hidden>
++          <label class="field">
++            Pick a frame
++            <input id="frame-slider" type="range" min="0" max="0" step="0.1" value="0" />
++          </label>
++          <video id="frame-video" muted playsinline preload="auto" hidden></video>
++        </div>
++        <canvas id="photo-canvas" class="photo" aria-label="Reference photo. Click to place calibration or measurement points."></canvas>
++        <p id="photo-hint" class="hint">Set the scale first, then measure objects in the photo.</p>
++
++        <div class="row">
++          <button id="calibrate-btn" type="button" aria-pressed="false">Set scale: click two points</button>
++          <label class="field inline">
++            Known length (m)
++            <input id="known-length" type="number" min="0.1" step="0.01" placeholder="e.g. 0.9" />
++          </label>
++          <button id="apply-scale-btn" type="button">Apply scale</button>
++        </div>
++        <p id="scale-status" class="status" role="status"></p>
++
++        <div class="row">
++          <button id="measure-btn" type="button" aria-pressed="false">Measure: click two points</button>
++          <button id="use-width-btn" type="button">Use as width</button>
++          <button id="use-depth-btn" type="button">Use as depth</button>
++        </div>
++        <p id="measure-readout" class="status" role="status"></p>
++      </section>
++
++      <section aria-labelledby="step-plan">
++        <h2 id="step-plan">2. Plan</h2>
++        <div class="row">
++          <label class="field inline">
++            Room width (m)
++            <input id="room-width" type="number" min="1" step="0.1" value="4" />
++          </label>
++          <label class="field inline">
++            Room length (m)
++            <input id="room-length" type="number" min="1" step="0.1" value="5" />
++          </label>
++        </div>
++
++        <div class="row">
++          <label class="field inline">
++            Click on the plan to place a
++            <select id="plan-tool">
++              <option value="furniture">piece of furniture</option>
++              <option value="exit">exit</option>
++            </select>
++          </label>
++        </div>
++
++        <fieldset>
++          <legend>Furniture</legend>
++          <div class="row">
++            <label class="field inline">
++              Type
++              <select id="preset-select"></select>
++            </label>
++            <label class="field inline">
++              Label
++              <input id="furniture-label" type="text" value="Chair" maxlength="40" />
++            </label>
++            <label class="field inline">
++              Width (m)
++              <input id="furniture-width" type="number" min="0.1" step="0.05" value="0.5" />
++            </label>
++            <label class="field inline">
++              Depth (m)
++              <input id="furniture-depth" type="number" min="0.1" step="0.05" value="0.5" />
++            </label>
++          </div>
++        </fieldset>
++
++        <fieldset>
++          <legend>Exit</legend>
++          <div class="row">
++            <label class="field inline">
++              Label
++              <input id="exit-label" type="text" value="Front door" maxlength="40" />
++            </label>
++            <label class="field inline">
++              Kind
++              <select id="exit-type">
++                <option value="primary">Main exit</option>
++                <option value="alternative">Alternative exit</option>
++              </select>
++            </label>
++          </div>
++          <p class="hint">Exits snap to the nearest wall when placed.</p>
++        </fieldset>
++
++        <canvas id="plan-canvas" class="plan" width="480" height="400" aria-label="Top-down room plan. Click to place the selected item."></canvas>
++      </section>
++
++      <section aria-labelledby="step-items">
++        <h2 id="step-items">3. Placed items</h2>
++        <ul id="items-list" class="items"></ul>
++        <h3>Checks</h3>
++        <ul id="issues-list" class="issues" aria-live="polite"></ul>
++        <div class="row">
++          <button id="save-btn" type="button">Save layout to this browser</button>
++        </div>
++        <p id="save-status" class="status" role="status"></p>
++      </section>
++    </main>
++    <script type="module" src="/src/builder/builder.ts"></script>
++  </body>
++</html>
+diff --git a/src/builder/builder.css b/src/builder/builder.css
+new file mode 100644
+index 0000000..fe45d51
+--- /dev/null
++++ b/src/builder/builder.css
+@@ -0,0 +1,166 @@
++:root {
++  color-scheme: light;
++  --ink: #0f172a;
++  --muted: #475569;
++  --line: #cbd5e1;
++  --accent: #0f766e;
++  --warn: #b45309;
++  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
++  color: var(--ink);
++  background: #f1f5f9;
++}
++
++body {
++  margin: 0;
++}
++
++.builder {
++  max-width: 56rem;
++  margin: 0 auto;
++  padding: 1.5rem 1rem 3rem;
++}
++
++h1 {
++  margin: 0 0 0.25rem;
++  font-size: 1.6rem;
++}
++
++h2 {
++  font-size: 1.15rem;
++  margin: 0 0 0.75rem;
++}
++
++h3 {
++  font-size: 1rem;
++  margin: 1.25rem 0 0.5rem;
++}
++
++section {
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 10px;
++  padding: 1rem 1.25rem;
++  margin-bottom: 1.25rem;
++}
++
++.lede,
++.hint {
++  color: var(--muted);
++  margin: 0.25rem 0 0.75rem;
++}
++
++.status {
++  margin: 0.5rem 0 0;
++  min-height: 1.2em;
++}
++
++.row {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.75rem;
++  align-items: flex-end;
++  margin: 0.5rem 0;
++}
++
++.field {
++  display: flex;
++  flex-direction: column;
++  gap: 0.25rem;
++  font-size: 0.9rem;
++  color: var(--muted);
++}
++
++.field.inline select,
++.field.inline input,
++.field input[type='file'] {
++  font: inherit;
++  padding: 0.35rem 0.5rem;
++  border: 1px solid var(--line);
++  border-radius: 6px;
++  color: var(--ink);
++  background: #fff;
++  min-width: 7rem;
++}
++
++button {
++  font: inherit;
++  padding: 0.45rem 0.9rem;
++  border-radius: 6px;
++  border: 1px solid var(--accent);
++  background: #fff;
++  color: var(--accent);
++  cursor: pointer;
++}
++
++button[aria-pressed='true'] {
++  background: var(--accent);
++  color: #fff;
++}
++
++button:disabled {
++  opacity: 0.5;
++  cursor: not-allowed;
++}
++
++#save-btn {
++  background: var(--accent);
++  color: #fff;
++}
++
++fieldset {
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  margin: 0.75rem 0;
++  padding: 0.5rem 0.9rem;
++}
++
++legend {
++  color: var(--muted);
++  font-size: 0.9rem;
++  padding: 0 0.3rem;
++}
++
++.photo,
++.plan {
++  display: block;
++  width: 100%;
++  max-width: 640px;
++  height: auto;
++  border: 1px solid var(--line);
++  border-radius: 6px;
++  background: #e2e8f0;
++  margin: 0.5rem 0;
++}
++
++.plan {
++  max-width: 480px;
++}
++
++.items,
++.issues {
++  padding-left: 1.2rem;
++  margin: 0.25rem 0;
++}
++
++.items li {
++  margin-bottom: 0.35rem;
++}
++
++.issues li {
++  color: var(--warn);
++  margin-bottom: 0.25rem;
++}
++
++.items button {
++  padding: 0.15rem 0.5rem;
++  font-size: 0.85rem;
++}
++
++@media (max-width: 480px) {
++  .builder {
++    padding: 1rem 0.5rem 2rem;
++  }
++  section {
++    padding: 0.85rem;
++  }
++}
+diff --git a/src/builder/builder.ts b/src/builder/builder.ts
+new file mode 100644
+index 0000000..25aa4c6
+--- /dev/null
++++ b/src/builder/builder.ts
+@@ -0,0 +1,443 @@
++import type { ExitMarker, RoomObject, RoomPlan } from '../core/types';
++import { createDefaultPlan } from '../data/defaultPlan';
++import { LocalStorageManager } from '../data/LocalStorageManager';
++import {
++  DEFAULT_FOOTPRINT_METRES,
++  FURNITURE_PRESETS,
++  calibrateScale,
++  footprintOf,
++  makeExit,
++  makeFurniture,
++  measureMetres,
++  planPixelToMetres,
++  snapToNearestWall,
++  validateLayout,
++  type PhotoScale,
++  type PixelPoint,
++  type PlanFrame,
++  type RoomSize
++} from './layoutGeometry';
++
++/**
++ * Photo-assisted room builder. The photo is a reference: it gives sizes once the
++ * user sets a scale. Furniture and exits are placed by clicking a top-down plan.
++ * Nothing is detected automatically, and every saved item is one the user placed.
++ */
++
++const PLAN_WIDTH = 480;
++const PLAN_HEIGHT = 400;
++const PLAN_MARGIN_METRES = 0.6;
++
++function $<T extends HTMLElement>(id: string): T {
++  const el = document.getElementById(id);
++  if (!el) throw new Error(`Missing element #${id}`);
++  return el as T;
++}
++
++const photoCanvas = $<HTMLCanvasElement>('photo-canvas');
++const planCanvas = $<HTMLCanvasElement>('plan-canvas');
++const video = $<HTMLVideoElement>('frame-video');
++const frameSlider = $<HTMLInputElement>('frame-slider');
++const videoControls = $<HTMLDivElement>('video-controls');
++const fileInput = $<HTMLInputElement>('file-input');
++const knownLengthInput = $<HTMLInputElement>('known-length');
++const scaleStatus = $<HTMLParagraphElement>('scale-status');
++const measureReadout = $<HTMLParagraphElement>('measure-readout');
++const photoHint = $<HTMLParagraphElement>('photo-hint');
++const calibrateButton = $<HTMLButtonElement>('calibrate-btn');
++const measureButton = $<HTMLButtonElement>('measure-btn');
++const applyScaleButton = $<HTMLButtonElement>('apply-scale-btn');
++const useWidthButton = $<HTMLButtonElement>('use-width-btn');
++const useDepthButton = $<HTMLButtonElement>('use-depth-btn');
++const roomWidthInput = $<HTMLInputElement>('room-width');
++const roomLengthInput = $<HTMLInputElement>('room-length');
++const toolSelect = $<HTMLSelectElement>('plan-tool');
++const presetSelect = $<HTMLSelectElement>('preset-select');
++const furnitureLabelInput = $<HTMLInputElement>('furniture-label');
++const furnitureWidthInput = $<HTMLInputElement>('furniture-width');
++const furnitureDepthInput = $<HTMLInputElement>('furniture-depth');
++const exitLabelInput = $<HTMLInputElement>('exit-label');
++const exitTypeSelect = $<HTMLSelectElement>('exit-type');
++const itemsList = $<HTMLUListElement>('items-list');
++const issuesList = $<HTMLUListElement>('issues-list');
++const saveButton = $<HTMLButtonElement>('save-btn');
++const saveStatus = $<HTMLParagraphElement>('save-status');
++
++const storage = new LocalStorageManager();
++const plan: RoomPlan = storage.loadPlan() ?? createDefaultPlan();
++
++let room: RoomSize = {
++  widthMeters: plan.roomDimensions.widthMeters ?? 4,
++  lengthMeters: plan.roomDimensions.lengthMeters ?? 5
++};
++let objects: RoomObject[] = [...plan.roomObjects];
++let exits: ExitMarker[] = [...plan.exits];
++
++let photoSource: HTMLImageElement | HTMLCanvasElement | null = null;
++let scale: PhotoScale | null = null;
++let mode: 'idle' | 'calibrate' | 'measure' = 'idle';
++let photoPoints: PixelPoint[] = [];
++/** True while the furniture size fields hold a value taken from the photo. */
++let sizeFromPhoto = false;
++
++function eventToCanvasPixel(ev: MouseEvent, canvas: HTMLCanvasElement): PixelPoint {
++  const rect = canvas.getBoundingClientRect();
++  return {
++    x: (ev.clientX - rect.left) * (canvas.width / rect.width),
++    y: (ev.clientY - rect.top) * (canvas.height / rect.height)
++  };
++}
++
++function parsePositive(input: HTMLInputElement, fallback: number): number {
++  const value = Number.parseFloat(input.value);
++  return Number.isFinite(value) && value > 0 ? value : fallback;
++}
++
++function setMode(next: typeof mode): void {
++  mode = next;
++  photoPoints = [];
++  calibrateButton.setAttribute('aria-pressed', String(next === 'calibrate'));
++  measureButton.setAttribute('aria-pressed', String(next === 'measure'));
++  photoHint.textContent =
++    next === 'calibrate' ? 'Click the two ends of something whose length you know, then enter that length and apply.'
++    : next === 'measure' ? 'Click the two ends of the span you want to measure.'
++    : 'Set the scale first, then measure objects in the photo.';
++  drawPhoto();
++}
++
++function drawPhoto(): void {
++  const ctx = photoCanvas.getContext('2d');
++  if (!ctx || !photoSource) return;
++  ctx.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
++  ctx.drawImage(photoSource, 0, 0, photoCanvas.width, photoCanvas.height);
++
++  ctx.fillStyle = '#e11d48';
++  ctx.strokeStyle = '#e11d48';
++  ctx.lineWidth = Math.max(2, photoCanvas.width / 300);
++  for (const p of photoPoints) {
++    ctx.beginPath();
++    ctx.arc(p.x, p.y, ctx.lineWidth * 3, 0, Math.PI * 2);
++    ctx.fill();
++  }
++  if (photoPoints.length === 2) {
++    ctx.beginPath();
++    ctx.moveTo(photoPoints[0]!.x, photoPoints[0]!.y);
++    ctx.lineTo(photoPoints[1]!.x, photoPoints[1]!.y);
++    ctx.stroke();
++  }
++}
++
++function setPhotoSource(source: HTMLImageElement | HTMLCanvasElement, width: number, height: number): void {
++  photoSource = source;
++  photoCanvas.width = width;
++  photoCanvas.height = height;
++  scale = null;
++  scaleStatus.textContent = 'Scale not set. Sizes from the photo are unavailable until you set it.';
++  measureReadout.textContent = '';
++  setMode('idle');
++  drawPhoto();
++}
++
++function loadPhotoFile(file: File): void {
++  const url = URL.createObjectURL(file);
++  if (file.type.startsWith('video/')) {
++    video.src = url;
++    videoControls.hidden = false;
++    return;
++  }
++  const img = new Image();
++  img.onload = () => {
++    videoControls.hidden = true;
++    setPhotoSource(img, img.naturalWidth, img.naturalHeight);
++    URL.revokeObjectURL(url);
++  };
++  img.onerror = () => {
++    URL.revokeObjectURL(url);
++    scaleStatus.textContent = 'That file could not be opened as a photo.';
++  };
++  img.src = url;
++}
++
++/** Copies the video's current frame into the photo canvas. */
++function captureVideoFrame(): void {
++  if (video.videoWidth === 0) return;
++  const frame = document.createElement('canvas');
++  frame.width = video.videoWidth;
++  frame.height = video.videoHeight;
++  frame.getContext('2d')?.drawImage(video, 0, 0);
++  setPhotoSource(frame, frame.width, frame.height);
++}
++
++video.addEventListener('loadeddata', () => {
++  frameSlider.max = String(video.duration || 0);
++  frameSlider.value = '0';
++  video.currentTime = 0;
++});
++video.addEventListener('seeked', captureVideoFrame);
++frameSlider.addEventListener('input', () => {
++  video.currentTime = Number.parseFloat(frameSlider.value);
++});
++
++fileInput.addEventListener('change', () => {
++  const file = fileInput.files?.[0];
++  if (file) loadPhotoFile(file);
++});
++
++photoCanvas.addEventListener('click', (ev) => {
++  if (!photoSource || mode === 'idle') return;
++  const p = eventToCanvasPixel(ev, photoCanvas);
++  if (mode === 'calibrate' && photoPoints.length >= 2) photoPoints.shift();
++  photoPoints.push(p);
++
++  if (mode === 'measure' && photoPoints.length === 2) {
++    if (!scale) {
++      measureReadout.textContent = 'Set the scale first, so the measurement has units.';
++    } else {
++      const metres = measureMetres(photoPoints[0]!, photoPoints[1]!, scale);
++      measureReadout.textContent = `Measured ${metres.toFixed(2)} m. This is an estimate from the photo.`;
++      useWidthButton.dataset.metres = metres.toFixed(2);
++      useDepthButton.dataset.metres = metres.toFixed(2);
++    }
++    photoPoints = [];
++  }
++  drawPhoto();
++});
++
++applyScaleButton.addEventListener('click', () => {
++  if (photoPoints.length !== 2) {
++    scaleStatus.textContent = 'Click two points on the photo first.';
++    return;
++  }
++  try {
++    scale = calibrateScale(photoPoints[0]!, photoPoints[1]!, parsePositiveOrThrow(knownLengthInput));
++    scaleStatus.textContent = `Scale set: about ${scale.pixelsPerMetre.toFixed(0)} pixels per metre. Photo sizes are estimates.`;
++    setMode('idle');
++  } catch (err) {
++    scaleStatus.textContent = err instanceof Error ? err.message : 'The scale could not be set.';
++  }
++});
++
++function parsePositiveOrThrow(input: HTMLInputElement): number {
++  const value = Number.parseFloat(input.value);
++  if (!Number.isFinite(value) || value <= 0) {
++    throw new RangeError('Enter the known length in metres, for example 0.9 for a 90 cm door.');
++  }
++  return value;
++}
++
++calibrateButton.addEventListener('click', () => setMode(mode === 'calibrate' ? 'idle' : 'calibrate'));
++measureButton.addEventListener('click', () => {
++  if (!scale) {
++    measureReadout.textContent = 'Set the scale first.';
++    return;
++  }
++  setMode(mode === 'measure' ? 'idle' : 'measure');
++});
++
++function useMeasurement(target: HTMLInputElement, button: HTMLButtonElement): void {
++  const metres = button.dataset.metres;
++  if (!metres) {
++    measureReadout.textContent = 'Measure something first.';
++    return;
++  }
++  target.value = metres;
++  sizeFromPhoto = true;
++}
++useWidthButton.addEventListener('click', () => useMeasurement(furnitureWidthInput, useWidthButton));
++useDepthButton.addEventListener('click', () => useMeasurement(furnitureDepthInput, useDepthButton));
++
++presetSelect.addEventListener('change', () => {
++  const preset = FURNITURE_PRESETS.find((p) => p.label === presetSelect.value);
++  if (!preset) return;
++  furnitureLabelInput.value = preset.label;
++  furnitureWidthInput.value = String(preset.widthMeters);
++  furnitureDepthInput.value = String(preset.depthMeters);
++  sizeFromPhoto = false;
++});
++for (const input of [furnitureWidthInput, furnitureDepthInput]) {
++  input.addEventListener('input', () => {
++    sizeFromPhoto = false;
++  });
++}
++
++for (const input of [roomWidthInput, roomLengthInput]) {
++  input.addEventListener('change', () => {
++    room = {
++      widthMeters: parsePositive(roomWidthInput, room.widthMeters),
++      lengthMeters: parsePositive(roomLengthInput, room.lengthMeters)
++    };
++    refresh();
++  });
++}
++
++function planFrame(): PlanFrame {
++  const pixelsPerMetre = Math.min(
++    PLAN_WIDTH / (room.widthMeters + PLAN_MARGIN_METRES),
++    PLAN_HEIGHT / (room.lengthMeters + PLAN_MARGIN_METRES)
++  );
++  return { originX: PLAN_WIDTH / 2, originY: PLAN_HEIGHT / 2, pixelsPerMetre };
++}
++
++function drawPlan(): void {
++  const ctx = planCanvas.getContext('2d');
++  if (!ctx) return;
++  const frame = planFrame();
++  const toPx = (x: number, z: number) => ({ x: frame.originX + x * frame.pixelsPerMetre, y: frame.originY + z * frame.pixelsPerMetre });
++
++  ctx.clearRect(0, 0, PLAN_WIDTH, PLAN_HEIGHT);
++  ctx.fillStyle = '#f8fafc';
++  ctx.fillRect(0, 0, PLAN_WIDTH, PLAN_HEIGHT);
++
++  const topLeft = toPx(-room.widthMeters / 2, -room.lengthMeters / 2);
++  ctx.strokeStyle = '#334155';
++  ctx.lineWidth = 2;
++  ctx.strokeRect(topLeft.x, topLeft.y, room.widthMeters * frame.pixelsPerMetre, room.lengthMeters * frame.pixelsPerMetre);
++
++  ctx.font = '12px sans-serif';
++  ctx.textAlign = 'center';
++  ctx.textBaseline = 'middle';
++  for (const o of objects) {
++    const fp = footprintOf(o);
++    const corner = toPx(fp.x - fp.halfWidth, fp.z - fp.halfDepth);
++    const w = fp.halfWidth * 2 * frame.pixelsPerMetre;
++    const d = fp.halfDepth * 2 * frame.pixelsPerMetre;
++    ctx.fillStyle = o.sizeSource === 'photo' ? 'rgba(14,165,233,0.35)' : 'rgba(100,116,139,0.35)';
++    ctx.fillRect(corner.x, corner.y, w, d);
++    ctx.strokeStyle = '#475569';
++    ctx.lineWidth = 1;
++    ctx.strokeRect(corner.x, corner.y, w, d);
++    const c = toPx(fp.x, fp.z);
++    ctx.fillStyle = '#0f172a';
++    ctx.fillText(o.label, c.x, c.y);
++  }
++
++  for (const e of exits) {
++    const p = toPx(e.position.x, e.position.z);
++    ctx.beginPath();
++    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
++    ctx.fillStyle = e.type === 'primary' ? '#16a34a' : '#f59e0b';
++    ctx.fill();
++    ctx.fillStyle = '#0f172a';
++    ctx.fillText(e.label, p.x, p.y - 14);
++  }
++}
++
++planCanvas.addEventListener('click', (ev) => {
++  const frame = planFrame();
++  const rect = planCanvas.getBoundingClientRect();
++  const pixel = {
++    x: (ev.clientX - rect.left) * (planCanvas.width / rect.width),
++    y: (ev.clientY - rect.top) * (planCanvas.height / rect.height)
++  };
++  const metres = planPixelToMetres(pixel, frame);
++
++  if (toolSelect.value === 'exit') {
++    const snap = snapToNearestWall(metres, room);
++    const label = exitLabelInput.value.trim() || `Exit ${exits.length + 1}`;
++    exits.push(makeExit(label, snap.position, exitTypeSelect.value === 'alternative' ? 'alternative' : 'primary'));
++  } else {
++    const label = furnitureLabelInput.value.trim() || 'Furniture';
++    const width = parsePositive(furnitureWidthInput, DEFAULT_FOOTPRINT_METRES);
++    const depth = parsePositive(furnitureDepthInput, DEFAULT_FOOTPRINT_METRES);
++    objects.push(makeFurniture(label, metres, width, depth, sizeFromPhoto ? 'photo' : 'entered'));
++  }
++  refresh();
++});
++
++function removeObject(id: string): void {
++  objects = objects.filter((o) => o.id !== id);
++  refresh();
++}
++
++function removeExit(id: string): void {
++  exits = exits.filter((e) => e.id !== id);
++  refresh();
++}
++
++function renderItems(): void {
++  itemsList.replaceChildren();
++  const rows: Array<{ text: string; onRemove: () => void }> = [
++    ...objects.map((o) => ({
++      text: `${o.label}: ${(o.widthMeters ?? 0).toFixed(2)} × ${(o.depthMeters ?? 0).toFixed(2)} m, ${o.sizeSource === 'photo' ? 'size from photo (estimate)' : 'size entered by you'}`,
++      onRemove: () => removeObject(o.id)
++    })),
++    ...exits.map((e) => ({
++      text: `${e.label}: ${e.type === 'primary' ? 'main exit' : 'alternative exit'}`,
++      onRemove: () => removeExit(e.id)
++    }))
++  ];
++  if (rows.length === 0) {
++    const li = document.createElement('li');
++    li.textContent = 'Nothing placed yet.';
++    itemsList.append(li);
++    return;
++  }
++  for (const row of rows) {
++    const li = document.createElement('li');
++    const text = document.createElement('span');
++    text.textContent = row.text;
++    const remove = document.createElement('button');
++    remove.type = 'button';
++    remove.textContent = 'Remove';
++    remove.addEventListener('click', row.onRemove);
++    li.append(text, ' ', remove);
++    itemsList.append(li);
++  }
++}
++
++function renderIssues(): string[] {
++  const issues = validateLayout(room, objects, exits);
++  issuesList.replaceChildren();
++  for (const issue of issues) {
++    const li = document.createElement('li');
++    li.textContent = issue;
++    issuesList.append(li);
++  }
++  saveButton.disabled = issues.length > 0;
++  return issues;
++}
++
++function refresh(): void {
++  drawPlan();
++  renderItems();
++  renderIssues();
++}
++
++saveButton.addEventListener('click', () => {
++  if (validateLayout(room, objects, exits).length > 0) return;
++
++  const saved: RoomPlan = {
++    ...plan,
++    roomTemplate: 'custom',
++    roomDimensions: { widthMeters: room.widthMeters, lengthMeters: room.lengthMeters },
++    roomObjects: objects,
++    exits,
++    // Routes that pointed at an exit you removed would no longer work.
++    routes: plan.routes.filter((r) => exits.some((e) => e.id === r.exitId)),
++    updatedAt: new Date().toISOString()
++  };
++  storage.savePlan(saved);
++
++  // Storage can fail silently (private mode, full quota). Read back to confirm.
++  const check = storage.loadPlan();
++  if (check?.updatedAt === saved.updatedAt) {
++    saveStatus.textContent = 'Saved. Open the plan in the app to see the arrow routes update.';
++  } else {
++    saveStatus.textContent = 'The layout could not be saved in this browser. Check that storage is allowed, then try again.';
++  }
++});
++
++roomWidthInput.value = String(room.widthMeters);
++roomLengthInput.value = String(room.lengthMeters);
++presetSelect.replaceChildren(
++  ...FURNITURE_PRESETS.map((p) => {
++    const option = document.createElement('option');
++    option.value = p.label;
++    option.textContent = p.label;
++    return option;
++  })
++);
++photoCanvas.width = 640;
++photoCanvas.height = 480;
++setMode('idle');
++refresh();
+diff --git a/src/builder/layoutGeometry.ts b/src/builder/layoutGeometry.ts
+new file mode 100644
+index 0000000..d61afb2
+--- /dev/null
++++ b/src/builder/layoutGeometry.ts
+@@ -0,0 +1,206 @@
++import type { ExitMarker, RoomObject, Vec2 } from '../core/types';
++
++/**
++ * Pure geometry for the photo-assisted room builder. No DOM access, so it can be
++ * tested in Node. Plan coordinates follow the planner: metres from the room centre,
++ * x to the right, z down. Points coming from a click are in pixels.
++ */
++
++export interface PixelPoint {
++  x: number;
++  y: number;
++}
++
++/** Converts photo pixels to metres. Only valid for the plane the scale was measured on. */
++export interface PhotoScale {
++  pixelsPerMetre: number;
++}
++
++/** Maps plan-canvas pixels to plan metres. The origin is the room centre on the canvas. */
++export interface PlanFrame {
++  originX: number;
++  originY: number;
++  pixelsPerMetre: number;
++}
++
++export interface RoomSize {
++  widthMeters: number;
++  lengthMeters: number;
++}
++
++export type WallSide = 'north' | 'south' | 'east' | 'west';
++
++export interface WallSnap {
++  position: Vec2;
++  wall: WallSide;
++}
++
++/** An exit must sit within this distance of a wall to count as being on it. */
++export const WALL_TOLERANCE_METRES = 0.3;
++
++/** Calibration points closer than this are too imprecise to trust. */
++const MIN_CALIBRATION_PIXELS = 20;
++
++/** Size used for a furniture item whose size is missing or invalid. */
++export const DEFAULT_FOOTPRINT_METRES = 0.5;
++
++/** Typical sizes, used as starting values the user can change. */
++export const FURNITURE_PRESETS: ReadonlyArray<{ label: string; widthMeters: number; depthMeters: number }> = [
++  { label: 'Chair', widthMeters: 0.5, depthMeters: 0.5 },
++  { label: 'Table', widthMeters: 1.2, depthMeters: 0.8 },
++  { label: 'Sofa', widthMeters: 2.0, depthMeters: 0.9 },
++  { label: 'Bed', widthMeters: 2.0, depthMeters: 1.6 },
++  { label: 'Cabinet', widthMeters: 1.0, depthMeters: 0.5 }
++];
++
++export function pixelDistance(a: PixelPoint, b: PixelPoint): number {
++  return Math.hypot(b.x - a.x, b.y - a.y);
++}
++
++/**
++ * Builds a scale from two clicked points whose real distance the user knows,
++ * such as the width of a door or the room's width.
++ */
++export function calibrateScale(a: PixelPoint, b: PixelPoint, knownMetres: number): PhotoScale {
++  if (!Number.isFinite(knownMetres) || knownMetres <= 0) {
++    throw new RangeError('The known length must be a positive number of metres.');
++  }
++  const pixels = pixelDistance(a, b);
++  if (pixels < MIN_CALIBRATION_PIXELS) {
++    throw new RangeError('The two calibration points are too close. Click the ends of a longer known length.');
++  }
++  return { pixelsPerMetre: pixels / knownMetres };
++}
++
++/**
++ * Length in metres between two clicked points on a calibrated photo. The photo is a
++ * perspective view, so this is an estimate, not a survey measurement.
++ */
++export function measureMetres(a: PixelPoint, b: PixelPoint, scale: PhotoScale): number {
++  return pixelDistance(a, b) / scale.pixelsPerMetre;
++}
++
++export function planPixelToMetres(p: PixelPoint, frame: PlanFrame): Vec2 {
++  return {
++    x: (p.x - frame.originX) / frame.pixelsPerMetre,
++    z: (p.y - frame.originY) / frame.pixelsPerMetre
++  };
++}
++
++/** Clamps a point into the room, then moves it onto the nearest wall. */
++export function snapToNearestWall(p: Vec2, room: RoomSize): WallSnap {
++  const hw = room.widthMeters / 2;
++  const hl = room.lengthMeters / 2;
++  const x = Math.max(-hw, Math.min(hw, p.x));
++  const z = Math.max(-hl, Math.min(hl, p.z));
++
++  const candidates: Array<{ distance: number; snap: WallSnap }> = [
++    { distance: z + hl, snap: { position: { x, z: -hl }, wall: 'north' } },
++    { distance: hl - z, snap: { position: { x, z: hl }, wall: 'south' } },
++    { distance: hw - x, snap: { position: { x: hw, z }, wall: 'east' } },
++    { distance: x + hw, snap: { position: { x: -hw, z }, wall: 'west' } }
++  ];
++  candidates.sort((a, b) => a.distance - b.distance);
++  return candidates[0]!.snap;
++}
++
++/** Distance from a point to the nearest room wall. */
++export function distanceToNearestWall(p: Vec2, room: RoomSize): number {
++  const hw = room.widthMeters / 2;
++  const hl = room.lengthMeters / 2;
++  return Math.min(hw - p.x, p.x + hw, hl - p.z, p.z + hl);
++}
++
++export interface Footprint {
++  x: number;
++  z: number;
++  halfWidth: number;
++  halfDepth: number;
++}
++
++/** Axis-aligned footprint. A 90° or 270° rotation swaps width and depth. */
++export function footprintOf(o: Pick<RoomObject, 'position' | 'widthMeters' | 'depthMeters' | 'rotationDegrees'>): Footprint {
++  const width = o.widthMeters && o.widthMeters > 0 ? o.widthMeters : DEFAULT_FOOTPRINT_METRES;
++  const depth = o.depthMeters && o.depthMeters > 0 ? o.depthMeters : DEFAULT_FOOTPRINT_METRES;
++  const quarterTurn = o.rotationDegrees === 90 || o.rotationDegrees === 270;
++  return {
++    x: o.position.x,
++    z: o.position.z,
++    halfWidth: (quarterTurn ? depth : width) / 2,
++    halfDepth: (quarterTurn ? width : depth) / 2
++  };
++}
++
++const OVERLAP_TOLERANCE = 0.01;
++
++function footprintsOverlap(a: Footprint, b: Footprint): boolean {
++  return (
++    Math.abs(a.x - b.x) < a.halfWidth + b.halfWidth - OVERLAP_TOLERANCE &&
++    Math.abs(a.z - b.z) < a.halfDepth + b.halfDepth - OVERLAP_TOLERANCE
++  );
++}
++
++/**
++ * Checks a builder layout. Returns plain-language problems; an empty list means the
++ * layout can be saved. Rules: everything stays inside the room, objects do not
++ * overlap, every exit is on a wall, and at least one exit is marked.
++ */
++export function validateLayout(room: RoomSize, objects: RoomObject[], exits: ExitMarker[]): string[] {
++  const issues: string[] = [];
++  const hw = room.widthMeters / 2;
++  const hl = room.lengthMeters / 2;
++
++  const footprints = objects.map((o) => ({ label: o.label, fp: footprintOf(o) }));
++  for (const { label, fp } of footprints) {
++    if (fp.x - fp.halfWidth < -hw || fp.x + fp.halfWidth > hw || fp.z - fp.halfDepth < -hl || fp.z + fp.halfDepth > hl) {
++      issues.push(`${label} extends outside the room.`);
++    }
++  }
++
++  for (let i = 0; i < footprints.length; i++) {
++    for (let j = i + 1; j < footprints.length; j++) {
++      if (footprintsOverlap(footprints[i]!.fp, footprints[j]!.fp)) {
++        issues.push(`${footprints[i]!.label} overlaps ${footprints[j]!.label}.`);
++      }
++    }
++  }
++
++  let exitsOnWall = 0;
++  for (const exit of exits) {
++    if (distanceToNearestWall(exit.position, room) > WALL_TOLERANCE_METRES) {
++      issues.push(`${exit.label} is not on a wall.`);
++    } else {
++      exitsOnWall++;
++    }
++  }
++
++  if (exitsOnWall === 0) {
++    issues.push('Mark at least one exit before saving.');
++  }
++
++  return issues;
++}
++
++export function makeFurniture(
++  label: string,
++  position: Vec2,
++  widthMeters: number,
++  depthMeters: number,
++  sizeSource: 'photo' | 'entered'
++): RoomObject {
++  return {
++    id: crypto.randomUUID(),
++    kind: 'furniture',
++    label,
++    position,
++    userConfirmed: true,
++    widthMeters,
++    depthMeters,
++    rotationDegrees: 0,
++    sizeSource
++  };
++}
++
++export function makeExit(label: string, position: Vec2, type: ExitMarker['type']): ExitMarker {
++  return { id: crypto.randomUUID(), label, position, type, userConfirmed: true };
++}
+diff --git a/src/core/types.ts b/src/core/types.ts
+index c29c94d..b2ab846 100644
+--- a/src/core/types.ts
++++ b/src/core/types.ts
+@@ -46,6 +46,8 @@ export interface RoomObject {
+   widthMeters?: number;
+   depthMeters?: number;
+   rotationDegrees?: number;
++  /** Where the size came from: measured on a calibrated photo, or typed in by the user. */
++  sizeSource?: 'photo' | 'entered';
+ }
+ 
+ export interface ExitMarker {
+diff --git a/tests/builder/layoutGeometry.test.ts b/tests/builder/layoutGeometry.test.ts
+new file mode 100644
+index 0000000..abbd3dc
+--- /dev/null
++++ b/tests/builder/layoutGeometry.test.ts
+@@ -0,0 +1,96 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import {
++  calibrateScale,
++  distanceToNearestWall,
++  footprintOf,
++  makeExit,
++  makeFurniture,
++  measureMetres,
++  planPixelToMetres,
++  snapToNearestWall,
++  validateLayout
++} from '../../src/builder/layoutGeometry';
++
++const ROOM = { widthMeters: 4, lengthMeters: 5 };
++
++test('calibration converts a known length into pixels per metre', () => {
++  const scale = calibrateScale({ x: 0, y: 0 }, { x: 300, y: 400 }, 2.5);
++  // Distance is 500 px over 2.5 m, so 200 px per metre.
++  assert.equal(scale.pixelsPerMetre, 200);
++  assert.equal(measureMetres({ x: 10, y: 10 }, { x: 110, y: 10 }, scale), 0.5);
++});
++
++test('calibration rejects invalid lengths and points that are too close', () => {
++  assert.throws(() => calibrateScale({ x: 0, y: 0 }, { x: 100, y: 0 }, 0), RangeError);
++  assert.throws(() => calibrateScale({ x: 0, y: 0 }, { x: 100, y: 0 }, Number.NaN), RangeError);
++  assert.throws(() => calibrateScale({ x: 0, y: 0 }, { x: 3, y: 4 }, 1), RangeError);
++});
++
++test('plan pixels map to metres from the room centre, x right and z down', () => {
++  const frame = { originX: 200, originY: 150, pixelsPerMetre: 60 };
++  assert.deepEqual(planPixelToMetres({ x: 200, y: 150 }, frame), { x: 0, z: 0 });
++  assert.deepEqual(planPixelToMetres({ x: 260, y: 90 }, frame), { x: 1, z: -1 });
++});
++
++test('a point is snapped to the closest wall', () => {
++  const near = snapToNearestWall({ x: 1.8, z: 0 }, ROOM);
++  assert.equal(near.wall, 'east');
++  assert.deepEqual(near.position, { x: 2, z: 0 });
++
++  const north = snapToNearestWall({ x: 0, z: -2.3 }, ROOM);
++  assert.equal(north.wall, 'north');
++  assert.deepEqual(north.position, { x: 0, z: -2.5 });
++});
++
++test('points outside the room are clamped before snapping', () => {
++  const snap = snapToNearestWall({ x: 9, z: 0 }, ROOM);
++  assert.equal(snap.wall, 'east');
++  assert.deepEqual(snap.position, { x: 2, z: 0 });
++});
++
++test('distance to the nearest wall is measured from the room edge', () => {
++  assert.equal(distanceToNearestWall({ x: 0, z: 0 }, ROOM), 2);
++  assert.ok(Math.abs(distanceToNearestWall({ x: 1.9, z: 0 }, ROOM) - 0.1) < 1e-9);
++});
++
++test('rotation of a quarter turn swaps width and depth in the footprint', () => {
++  const fp = footprintOf({ position: { x: 0, z: 0 }, widthMeters: 2, depthMeters: 1, rotationDegrees: 90 });
++  assert.equal(fp.halfWidth, 0.5);
++  assert.equal(fp.halfDepth, 1);
++});
++
++test('a layout with an exit and one clear object passes validation', () => {
++  const sofa = makeFurniture('Sofa', { x: 0, z: 1.5 }, 2, 0.9, 'entered');
++  const exit = makeExit('Front door', { x: 0, z: 2.5 }, 'primary');
++  assert.deepEqual(validateLayout(ROOM, [sofa], [exit]), []);
++});
++
++test('objects outside the room are reported', () => {
++  const bed = makeFurniture('Bed', { x: 1.5, z: 0 }, 2, 1.6, 'photo');
++  const exit = makeExit('Door', { x: 0, z: 2.5 }, 'primary');
++  assert.deepEqual(validateLayout(ROOM, [bed], [exit]), ['Bed extends outside the room.']);
++});
++
++test('overlapping objects are reported, but touching ones are not', () => {
++  const a = makeFurniture('Table', { x: 0, z: 0 }, 1.2, 0.8, 'entered');
++  const b = makeFurniture('Chair', { x: 0.5, z: 0 }, 0.5, 0.5, 'entered');
++  const exit = makeExit('Door', { x: 0, z: 2.5 }, 'primary');
++  assert.deepEqual(validateLayout(ROOM, [a, b], [exit]), ['Table overlaps Chair.']);
++
++  // Stool's edge sits exactly on the table's edge: that is allowed.
++  const touching = makeFurniture('Stool', { x: 0, z: 0.65 }, 0.5, 0.5, 'entered');
++  assert.deepEqual(validateLayout(ROOM, [a, touching], [exit]), []);
++});
++
++test('an exit away from every wall is reported', () => {
++  const floating = makeExit('Window', { x: 0, z: 0 }, 'alternative');
++  assert.deepEqual(validateLayout(ROOM, [], [floating]), [
++    'Window is not on a wall.',
++    'Mark at least one exit before saving.'
++  ]);
++});
++
++test('a layout with no exit cannot be saved', () => {
++  assert.deepEqual(validateLayout(ROOM, [], []), ['Mark at least one exit before saving.']);
++});
+diff --git a/vite.config.ts b/vite.config.ts
+index e985261..c50c99a 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -10,7 +10,8 @@ export default defineConfig({
+         main: 'index.html',
+         app: 'app.html',
+         viewer: 'viewer.html',
+-        training: 'training.html'
++        training: 'training.html',
++        builder: 'builder.html'
+       }
+     }
+   },
+-- 
+2.43.0
+
