@@ -305,3 +305,8 @@ main{position:relative;z-index:1}
 .rf-title, .rf-sub { transition: opacity .18s ease, transform .18s ease; }
 .rf-title.is-out { opacity: 0; transform: translateY(-8px); }
 .rf-sub.is-out { opacity: 0; }
+
+/* single hero model: centred, clear of the text */
+.rf-stage > .slot { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); width: min(92vw, 74vh, 760px); height: min(78vh, 760px); }
+/* hero title sits below the house, not over it */
+.rf-hero .rf-title { font-size: clamp(40px, 6.4vw, 104px); bottom: 96px; }

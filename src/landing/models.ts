@@ -13,7 +13,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
  *   blocks - a small neighbourhood with a meeting point
  * Models assemble into place on each transition (Spec.assemble) and rest still otherwise.
  */
-export type ModelKey = 'door' | 'room' | 'cubes' | 'knot' | 'rings' | 'path' | 'blocks';
+export type ModelKey = 'house' | 'door' | 'room' | 'cubes' | 'knot' | 'rings' | 'path' | 'blocks';
 export type V3 = [number, number, number];
 export type Anim = (t: number) => void;
 
@@ -391,6 +391,7 @@ function buildBlocks(): Spec {
 /** Builds every section model. */
 export function buildModels(): Record<ModelKey, Spec> {
   return {
+    house: buildHouse(),
     door: buildDoor(),
     room: buildRoom(),
     cubes: buildCubes(),
@@ -398,5 +399,108 @@ export function buildModels(): Record<ModelKey, Spec> {
     rings: buildRings(),
     path: buildPath(),
     blocks: buildBlocks()
+  };
+}
+
+/* Hero: one full house. Its front door is lit and a glowing route runs out of the door to the meeting point. */
+export function buildHouse(): Spec {
+  const g = new THREE.Group();
+  const anim: Anim[] = [];
+  const wallM = std(C.wall, 0.95);
+  const WH = 2.2;          // wall height
+  const T = 0.14;          // wall thickness
+  const W = 4.0, D = 3.0;  // footprint: x in [-2, 2], z in [-1.5, 1.5]
+
+  // ground and paving
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.1, 8.5), std(C.floor, 0.9));
+  ground.position.set(0, -0.05, 0);
+  g.add(shadowed(ground));
+  const path = new THREE.Mesh(rbox(1.2, 0.05, 3.2, 0.02), std(C.tile, 0.9));
+  path.position.set(0, 0.03, 3.1);
+  g.add(shadowed(path));
+
+  // walls
+  const add = (geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number): THREE.Mesh => {
+    const m = shadowed(new THREE.Mesh(geo, mat));
+    m.position.set(x, y, z);
+    g.add(m);
+    return m;
+  };
+  add(new THREE.BoxGeometry(W, WH, T), wallM, 0, WH / 2, -D / 2 + T / 2);           // back
+  add(new THREE.BoxGeometry(T, WH, D), wallM, -W / 2 + T / 2, WH / 2, 0);          // left
+  add(new THREE.BoxGeometry(T, WH, D), wallM, W / 2 - T / 2, WH / 2, 0);           // right
+  add(new THREE.BoxGeometry(1.6, WH, T), wallM, -1.2, WH / 2, D / 2 - T / 2);      // front, left of door
+  add(new THREE.BoxGeometry(1.6, WH, T), wallM, 1.2, WH / 2, D / 2 - T / 2);       // front, right of door
+  add(new THREE.BoxGeometry(0.8, WH - 1.5, T), wallM, 0, 1.5 + (WH - 1.5) / 2, D / 2 - T / 2); // lintel
+
+  // windows
+  const glassM = new THREE.MeshPhysicalMaterial({ color: C.glass, roughness: 0.05, transparent: true, opacity: 0.6 });
+  const pane = (w: number, h: number, x: number, y: number, z: number, ry: number): void => {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), glassM);
+    p.position.set(x, y, z);
+    p.rotation.y = ry;
+    g.add(p);
+  };
+  pane(0.7, 0.7, -1.2, 1.25, D / 2 + 0.01, 0);
+  pane(0.7, 0.7, 1.2, 1.25, D / 2 + 0.01, 0);
+  pane(0.7, 0.7, -1.2, 1.25, -D / 2 - 0.01, Math.PI);
+  pane(0.7, 0.7, 1.2, 1.25, -D / 2 - 0.01, Math.PI);
+  pane(0.7, 0.7, W / 2 + 0.01, 1.25, 0.6, Math.PI / 2);
+  pane(0.7, 0.7, -W / 2 - 0.01, 1.25, -0.6, -Math.PI / 2);
+
+  // roof: two panels meeting at the ridge
+  const roofM = std(0x6b4a2f, 0.7);
+  const slope = Math.atan2(1.2, D / 2);
+  const roofA = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, 0.12, 2.4), roofM));
+  roofA.position.set(0, WH + 0.6, -D / 4);
+  roofA.rotation.x = -slope;
+  g.add(roofA);
+  const roofB = shadowed(new THREE.Mesh(new THREE.BoxGeometry(W + 0.4, 0.12, 2.4), roofM));
+  roofB.position.set(0, WH + 0.6, D / 4);
+  roofB.rotation.x = slope;
+  g.add(roofB);
+  add(new THREE.BoxGeometry(0.4, 0.9, 0.4), std(C.terra, 0.8), 1.2, WH + 1.0, -0.6);
+
+  // front door and its lit exit sign
+  const door = add(new THREE.BoxGeometry(0.8, 1.5, 0.06), std(C.woodDark, 0.6), 0, 0.75, D / 2 + 0.02);
+  void door;
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.16, 0.05), glow(C.lime, 1.4));
+  sign.position.set(0, 1.62, D / 2 + 0.05);
+  g.add(sign);
+
+  // escape route: from inside the door, out along the path to the meeting point
+  const routeCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0.14, D / 2 - 0.3),
+    new THREE.Vector3(0, 0.14, D / 2 + 0.6),
+    new THREE.Vector3(0, 0.14, 3.6),
+    new THREE.Vector3(0.9, 0.14, 4.2),
+    new THREE.Vector3(2.2, 0.14, 4.4)
+  ]);
+  const routeMat = glow(C.peach, 1.1);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(routeCurve, 200, 0.04, 10, false), routeMat));
+  const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), glow(0xffffff, 2));
+  g.add(pulse);
+
+  // meeting point outside: a disc, a pin and a glowing marker
+  const disc = add(new THREE.CylinderGeometry(0.5, 0.5, 0.02, 40), std(C.tile, 0.9), 2.2, 0.01, 4.4);
+  void disc;
+  add(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 10), std(C.metal, 0.5), 2.2, 0.31, 4.4);
+  const marker = add(new THREE.SphereGeometry(0.09, 16, 12), glow(C.mint, 1.6), 2.2, 0.66, 4.4);
+
+  anim.push((t) => {
+    pulse.position.copy(routeCurve.getPointAt((((t * 0.12) % 1) + 1) % 1));
+    routeMat.emissiveIntensity = 0.9 + 0.3 * Math.sin(t * 2);
+    sign.scale.x = 1 + 0.04 * Math.sin(t * 2.4);
+    marker.scale.setScalar(1 + 0.06 * Math.sin(t * 1.8));
+  });
+
+  return {
+    group: g,
+    anim,
+    assemble: () => {},
+    fit: 0.78,
+    offset: [0, 0, 0],
+    camPos: [7.2, 6.4, 9.0],
+    camLook: [0, 1.2, 1.2]
   };
 }

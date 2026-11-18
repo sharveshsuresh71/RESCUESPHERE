@@ -1,6 +1,5 @@
 import { startStage } from './stage';
 import { initEffects } from './effects';
-import { initReel } from './reel';
 import { initInside } from './inside';
 
 /* Landing page entry: the 3D stage, the hero reel, the pinned flow and the DOM effects,
@@ -13,6 +12,5 @@ if (canvas instanceof HTMLCanvasElement) {
   if (startStage(canvas, slots, reduced)) document.body.classList.add('has-stage');
 }
 
-initReel(reduced);
 initInside(reduced);
 initEffects(reduced);

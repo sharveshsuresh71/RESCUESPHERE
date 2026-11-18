@@ -35,36 +35,14 @@
 
 <main id="top">
 
-  <!-- HERO REEL: one 3D model at a time. Each change: text and model leave, then the next one arrives. -->
-  <section class="rf-hero" id="reel" aria-roledescription="carousel" aria-label="RescueSphere 3D models">
-    <div class="rf-rv" aria-hidden="true"></div>
+  <!-- HERO: one full house. The lit door and the glowing route show the way out to the meeting point. -->
+  <section class="rf-hero" id="reel" aria-label="RescueSphere hero">
     <h1 class="rf-kicker">RescueSphere · Plan your safe exit</h1>
-    <button class="rf-auto" id="reelAuto" aria-pressed="true" type="button"><span class="rf-ring" aria-hidden="true"></span>Autoplay</button>
-
     <div class="rf-stage">
-      <div class="rf-item" data-name="Route" data-color="#f0a06a" data-sub="A floor plan with the escape route drawn step by step." data-off>
-        <div class="slot" data-model="door" data-reel role="img" aria-label="3D model: a floor plan with the escape route drawn step by step"></div>
-      </div>
-      <div class="rf-item" data-name="Room" data-color="#46c489" data-sub="A furnished room with a lit exit door." data-off>
-        <div class="slot" data-model="room" data-reel role="img" aria-label="3D model: a furnished room with a lit exit door"></div>
-      </div>
-      <div class="rf-item" data-name="Blocked" data-color="#9fb8d6" data-sub="A blocked corridor, with a warning and a detour." data-off>
-        <div class="slot" data-model="knot" data-reel role="img" aria-label="3D model: a blocked corridor with a warning and a detour"></div>
-      </div>
-      <div class="rf-item" data-name="Roadmap" data-color="#c9b0f0" data-sub="Three platforms, with a pulse reaching each one." data-off>
-        <div class="slot" data-model="path" data-reel role="img" aria-label="3D model: a roadmap with three platforms and a pulse reaching each"></div>
-      </div>
-      <div class="rf-item" data-name="Benefits" data-color="#e9d19a" data-sub="Four plain benefits, each one a single idea." data-off>
-        <div class="slot" data-model="cubes" data-reel role="img" aria-label="3D model: four benefit tiles"></div>
-      </div>
+      <div class="slot" data-model="house" data-reel role="img" aria-label="3D model: a full house with a lit front door and a glowing route out to the meeting point"></div>
     </div>
-
-    <p class="rf-count" id="reelCount" aria-hidden="true">01</p>
-    <button class="rf-next" id="reelNext" type="button" aria-label="Next model">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
-    </button>
-    <p class="rf-title" id="reelTitle" aria-live="polite">Route</p>
-    <p class="rf-sub" id="reelSub">A floor plan with the escape route drawn step by step.</p>
+    <p class="rf-title" id="reelTitle">Your way out</p>
+    <p class="rf-sub" id="reelSub">Every room, one clear route to the door.</p>
     <a class="rf-cta magnetic" href="app.html" data-transition>Open the 3D planner <span aria-hidden="true">→</span></a>
   </section>
 

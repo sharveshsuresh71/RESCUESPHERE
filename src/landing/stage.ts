@@ -58,7 +58,7 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const MODEL_KEYS: ModelKey[] = ['door', 'room', 'cubes', 'knot', 'rings', 'path', 'blocks'];
+  const MODEL_KEYS: ModelKey[] = ['house', 'door', 'room', 'cubes', 'knot', 'rings', 'path', 'blocks'];
   const views: SlotView[] = [];
 
   for (const el of slotEls) {
