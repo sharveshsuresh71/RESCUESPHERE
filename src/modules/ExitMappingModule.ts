@@ -8,6 +8,7 @@ import {
   createDisclaimer
 } from '../ui/UiHelpers';
 import { createPlanEditor } from '../ui/PlanEditor';
+import { mountHouse } from '../ui/HouseView';
 
 export class ExitMappingModule implements ExperienceModule {
   readonly id = 'exitMapping' as const;
@@ -17,6 +18,10 @@ export class ExitMappingModule implements ExperienceModule {
   render(container: HTMLElement): void {
     const plan = this.state.plan;
     const panel = createPanel('Exit Mapping', 'Identify up to two potential exits');
+
+    const houseView = document.createElement('div');
+    houseView.className = 'house-view';
+    mountHouse(houseView);
 
     panel.append(
       createParagraph('Add and label user-identified potential exits. RescueSphere does not determine whether an exit is safe or accessible.'),
@@ -28,6 +33,8 @@ export class ExitMappingModule implements ExperienceModule {
     }
 
     panel.append(
+      houseView,
+      createParagraph('Hover or tap the house to open it and see the escape route. Drag to turn it.'),
       createParagraph('Drag the exit markers (A, B) to where doors or other potential exits are in your room.'),
       createPlanEditor(plan, 'exits', () => {
         this.state.updatePlan((current) => {

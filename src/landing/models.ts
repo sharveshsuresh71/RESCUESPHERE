@@ -118,7 +118,7 @@ function woodMat(): THREE.MeshStandardMaterial {
 /* 1. Hero: a two-storey home, cut away. Hover (or tap) opens it up: the roof lifts, the upper floor
    rises, the ground floor drops and the walls step outward. The escape route runs from the upper
    bedroom, down the stairs and out of the front door, with a pulse travelling along it. */
-function buildCore(): Spec {
+export function buildCore(): Spec {
   const g = new THREE.Group();
   const anim: Anim[] = [];
   const wallM = std(C.wall, 0.95);
@@ -241,7 +241,7 @@ function buildCore(): Spec {
   const marker = place(mesh(new THREE.SphereGeometry(0.09, 16, 12), glow(C.mint, 1.6)), 1.2, 0.66, 3.8, [0.4, 0.6, 1]);
 
   anim.push((t) => {
-    pulse.position.copy(routeCurve.getPointAt((t * 0.1) % 1));
+    pulse.position.copy(routeCurve.getPointAt((((t * 0.1) % 1) + 1) % 1));
     routeMat.emissiveIntensity = 0.9 + 0.3 * Math.sin(t * 2);
     marker.scale.setScalar(1 + 0.06 * Math.sin(t * 1.8));
   });
