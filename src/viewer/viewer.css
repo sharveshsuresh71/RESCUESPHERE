@@ -1,0 +1,52 @@
+/* 3D viewer: neutral, technical. Blue-grey lines, one accent colour for the active part. */
+:root{--bg:#0a0d12;--panel:#10141c;--line:#22293a;--ink:#dfe5f5;--muted:#8a94b3;--accent:#b3e04a;--wire:#8f9bd0;--sans:system-ui,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);overflow:hidden}
+kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--muted);margin-left:6px}
+.vw{display:grid;grid-template-columns:260px 1fr 300px;grid-template-rows:52px 1fr;height:100vh}
+.vw-top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel)}
+.vw-brand{color:var(--ink);text-decoration:none;font-weight:600;letter-spacing:.01em}
+.vw-brand span{color:var(--muted);font-weight:400}
+.vw-keys{color:var(--muted);font-size:12px}
+.vw-label{font:600 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+.vw-list,.vw-inspector{background:var(--panel);overflow:auto;padding:18px}
+.vw-list{border-right:1px solid var(--line)}
+.vw-inspector{border-left:1px solid var(--line)}
+.vw-inspector section{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+.vw-model{display:grid;grid-template-columns:28px 1fr;gap:4px 8px;width:100%;text-align:left;background:none;border:1px solid transparent;color:var(--ink);padding:10px;border-radius:6px;cursor:pointer;font:inherit;margin-bottom:4px}
+.vw-model:hover{border-color:var(--line)}
+.vw-model[aria-pressed="true"]{border-color:var(--accent);background:rgba(179,224,74,.06)}
+.vw-model i{font:600 12px var(--mono);color:var(--muted);grid-row:span 2;padding-top:2px}
+.vw-model b{font-weight:600;font-size:13px}
+.vw-model small{color:var(--muted);font-size:12px}
+.vw-main{position:relative;overflow:hidden}
+#vw-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#vw-canvas:active{cursor:grabbing}
+.vw-fallback{position:absolute;inset:auto 0 auto 0;top:45%;text-align:center;color:var(--muted)}
+.vw-title{position:absolute;left:22px;top:18px;pointer-events:none}
+.vw-title h1{margin:0;font-size:20px;font-weight:600}
+.vw-title p{margin:4px 0 0;color:var(--muted);max-width:460px}
+.vw-readout{position:absolute;left:22px;bottom:50px;display:flex;gap:26px;background:rgba(16,20,28,.85);border:1px solid var(--line);border-radius:8px;padding:12px 16px;backdrop-filter:blur(6px)}
+.vw-readout div{display:flex;flex-direction:column;gap:2px}
+.vw-readout span{font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.vw-readout b{font:500 13px var(--mono)}
+.vw-foot{position:absolute;left:22px;bottom:18px;margin:0;color:var(--muted);font-size:12px}
+.vw-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.vw-seg button,.vw-btn{background:none;border:1px solid var(--line);color:var(--ink);padding:9px 10px;border-radius:6px;cursor:pointer;font:inherit}
+.vw-seg button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.vw-btn{width:100%}
+.vw-btn:hover,.vw-seg button:hover{border-color:var(--wire)}
+.vw-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.vw-row input{accent-color:var(--accent);width:16px;height:16px}
+.vw-slider{display:block;padding:10px 0 4px}
+.vw-slider span{display:flex;justify-content:space-between;margin-bottom:6px}
+.vw-slider output{color:var(--muted);font-family:var(--mono);font-size:12px}
+.vw-slider input{width:100%;accent-color:var(--accent)}
+.vw-about{margin:0;color:var(--muted);font-size:13px}
+@media (max-width:900px){
+  html,body{overflow:auto}
+  .vw{grid-template-columns:1fr;grid-template-rows:52px 240px 60vh auto;height:auto;min-height:100vh}
+  .vw-list{border-right:0;border-bottom:1px solid var(--line)}
+  .vw-inspector{border-left:0}
+  .vw-keys{display:none}
+}
