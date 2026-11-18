@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RescueSphere — 3D viewer</title>
+  <link rel="stylesheet" href="/src/viewer/viewer.css" />
+</head>
+<body>
+<div class="vw">
+  <header class="vw-top">
+    <a class="vw-brand" href="index.html">RescueSphere <span>/ 3D viewer</span></a>
+    <div class="vw-keys">Drag to orbit · Right-drag to pan · Scroll to zoom · 1–8 select · F fit · Space pause · G grid</div>
+  </header>
+
+  <aside class="vw-list" aria-label="Models">
+    <div class="vw-label">Models</div>
+    <div id="vw-models"></div>
+  </aside>
+
+  <main class="vw-main">
+    <canvas id="vw-canvas" aria-label="Interactive 3D model"></canvas>
+    <div class="vw-fallback" id="vw-fallback" hidden>WebGL is not available in this browser, so the 3D viewer cannot draw.</div>
+    <div class="vw-title">
+      <h1 id="vw-name">Hero · Room overview</h1>
+      <p id="vw-note"></p>
+    </div>
+    <div class="vw-readout" aria-live="polite">
+      <div><span>Size (units)</span><b id="vw-size">—</b></div>
+      <div><span>Meshes</span><b id="vw-meshes">—</b></div>
+      <div><span>Lines</span><b id="vw-lines">—</b></div>
+      <div><span>View</span><b id="vw-view">Isometric</b></div>
+    </div>
+    <p class="vw-foot">Schematic models. Dimensions are approximate; 1 unit is roughly 1 metre.</p>
+  </main>
+
+  <aside class="vw-inspector" aria-label="Viewer controls">
+    <section>
+      <div class="vw-label">Camera</div>
+      <div class="vw-seg" role="group" aria-label="Camera preset">
+        <button data-preset="iso" aria-pressed="true">Isometric</button>
+        <button data-preset="top" aria-pressed="false">Top</button>
+        <button data-preset="front" aria-pressed="false">Front</button>
+        <button data-preset="side" aria-pressed="false">Side</button>
+      </div>
+      <button class="vw-btn" id="vw-fit">Fit to model <kbd>F</kbd></button>
+    </section>
+
+    <section>
+      <div class="vw-label">Display</div>
+      <label class="vw-row"><span>Animate <kbd>Space</kbd></span><input type="checkbox" id="vw-anim" checked /></label>
+      <label class="vw-row"><span>Grid <kbd>G</kbd></span><input type="checkbox" id="vw-grid" checked /></label>
+      <label class="vw-row"><span>Axes</span><input type="checkbox" id="vw-axes" /></label>
+      <label class="vw-slider"><span>Fill <output id="vw-fill-out">100%</output></span><input type="range" id="vw-fill" min="0" max="100" value="100" /></label>
+      <label class="vw-slider"><span>Speed <output id="vw-speed-out">1.0×</output></span><input type="range" id="vw-speed" min="0" max="200" value="100" /></label>
+    </section>
+
+    <section>
+      <div class="vw-label">About this model</div>
+      <p class="vw-about" id="vw-about"></p>
+    </section>
+  </aside>
+</div>
+<script type="module" src="/src/viewer/viewer.ts"></script>
+</body>
+</html>
