@@ -1,4 +1,4 @@
-# RescueSphere template (Flashform-style)
+# RescueSphere template (Flashform-style, with 3D and effects)
 
 Files
 - index.html: all sections and copy
@@ -14,3 +14,9 @@ Notes
 - Fonts load from Google Fonts. Work offline and the page falls back to system fonts.
 - The petal animation is drawn on a canvas and stops when off-screen. It is still under reduced motion.
 - Room safety copy is a planning aid. Verify dimensions with a tape measure.
+
+3D and effects
+- Hero: three.js core, petal blades and orbit rings (WebGL). Falls back to 2D petals if WebGL is unavailable.
+- 3D room: scroll orbits the camera; the escape route pulses toward the exit.
+- Effects: letter reveals, scroll progress bar, cursor spotlight, tilting cards, magnetic buttons, parallax headings.
+- three.js loads from cdnjs (r128). Needs internet on first load.

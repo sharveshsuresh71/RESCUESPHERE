@@ -12,6 +12,9 @@
 </head>
 <body>
 
+<div class="progress" id="progress" aria-hidden="true"></div>
+<div class="spot" id="spot" aria-hidden="true"></div>
+
 <header class="nav-wrap">
   <nav class="nav" aria-label="Main">
     <a class="brand" href="#top">
@@ -20,31 +23,32 @@
     </a>
     <ul class="links">
       <li><a href="#how">How it works</a></li>
+      <li><a href="#room">3D room</a></li>
       <li><a href="#benefits">Benefits</a></li>
       <li><a href="#faq">FAQ</a></li>
       <li><a href="#roadmap">Roadmap</a></li>
     </ul>
-    <a class="pill" href="#join">Get started</a>
+    <a class="pill magnetic" href="#join">Get started</a>
   </nav>
 </header>
 
 <main id="top">
 
-  <!-- HERO -->
+  <!-- HERO: 3D core with petal blades and orbit rings -->
   <section class="hero">
-    <h1 class="hero-title">
+    <h1 class="hero-title" data-split>
       <span class="line">Plan your</span>
       <span class="line"><em>safe exit</em></span>
     </h1>
     <p class="hero-small">Escape routes, checked before you need them</p>
-    <canvas id="petals" class="petals" aria-hidden="true"></canvas>
-    <p class="hero-foot"><em>and that’s all</em></p>
+    <canvas id="hero3d" class="petals" aria-label="A glowing 3D sphere with petal blades, drifting slowly" role="img"></canvas>
+    <p class="hero-foot" data-speed="-.15"><em>and that’s all</em></p>
     <p class="hero-note">We are not a floor planner. We check one thing well: whether every room has a clear way out.</p>
   </section>
 
   <!-- HOW IT WORKS -->
   <section class="how" id="how">
-    <h2 class="huge">How <em>it</em> works</h2>
+    <h2 class="huge" data-split>How <em>it</em> works</h2>
     <ol class="steps">
       <li class="reveal"><span class="n">Step 1</span><span class="t">Choose a room or upload a photo</span></li>
       <li class="reveal"><span class="n">Step 2</span><span class="t">Add doors, windows and furniture</span></li>
@@ -53,33 +57,47 @@
     </ol>
   </section>
 
-  <!-- BENEFITS (lime cards) -->
+  <!-- 3D ROOM: scroll drives the camera; the escape route pulses toward the exit -->
+  <section class="room3d" id="room" aria-labelledby="room-title">
+    <canvas id="room3dcv" aria-hidden="true"></canvas>
+    <div class="room-caption">
+      <h2 id="room-title" class="room-title">Your room, <em>in 3D</em></h2>
+      <p>Scroll to orbit the room. The glowing line is the escape route; it turns amber if a door is blocked.</p>
+    </div>
+    <div class="room-legend" aria-hidden="true">
+      <span><i class="dot lime"></i>Exit</span>
+      <span><i class="dot peach"></i>Route</span>
+      <span><i class="dot mint"></i>Furniture</span>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
   <section class="benefits" id="benefits">
-    <p class="kicker">Important <em>benefits</em> — a few things we did on purpose</p>
+    <p class="kicker" data-split>Important <em>benefits</em> — a few things we did on purpose</p>
     <div class="cards">
-      <article class="card c1 reveal">
-        <p>Yeah, it’s almost a no-code decision. Open the page, pick a room, and you have a plan. No account needed to try it.</p>
+      <article class="card c1 reveal tilt">
+        <p>Open the page, pick a room, and you have a plan. No account needed to try it.</p>
         <h3>Simple</h3>
       </article>
-      <article class="card c2 reveal">
-        <p>We do one job: check that every room has a clear route to a door or window. Nothing extra to get in the way.</p>
+      <article class="card c2 reveal tilt">
+        <p>We do one job: check that every room has a clear route to a door or window. Nothing extra in the way.</p>
         <h3>One job</h3>
       </article>
-      <article class="card c3 reveal">
+      <article class="card c3 reveal tilt">
         <p>Built for people who are not technical, and for anyone who wants a quick check of a home or office.</p>
         <h3>For everyone</h3>
       </article>
-      <article class="card c4 reveal">
+      <article class="card c4 reveal tilt">
         <p>Your photos and plans stay in your browser. We do not upload them anywhere unless you choose to share.</p>
         <h3>Private</h3>
       </article>
     </div>
   </section>
 
-  <!-- PROBLEMS (lime panel) -->
+  <!-- PROBLEMS -->
   <section class="problems">
     <div class="problems-inner">
-      <h2 class="huge small"><span>Problems</span> <em>that we</em> <em>solve</em></h2>
+      <h2 class="huge small" data-split><span>Problems</span> <em>that we</em> <em>solve</em></h2>
       <div class="problem-list">
         <div class="problem reveal">
           <h3>Blocked exits go unnoticed</h3>
@@ -99,7 +117,7 @@
 
   <!-- FAQ -->
   <section class="faq" id="faq">
-    <h2 class="huge faq-title"><span>F</span><em>A</em><span>Q</span></h2>
+    <h2 class="huge faq-title" data-speed=".08"><span>F</span><em>A</em><span>Q</span></h2>
     <ul class="accordion">
       <li class="open">
         <button class="q" aria-expanded="true"><span class="num">01</span><span class="qt">Is RescueSphere a floor planner?</span><span class="ic">↑</span></button>
@@ -123,7 +141,7 @@
   <!-- ROADMAP -->
   <section class="roadmap" id="roadmap">
     <div class="rm-head">
-      <h2 class="rm-title">Project <em>roadmap</em></h2>
+      <h2 class="rm-title" data-split>Project <em>roadmap</em></h2>
       <p class="rm-sub">Part of RescueSphere is ready now. We keep improving it based on your feedback.</p>
     </div>
     <div class="rm-grid">
@@ -167,6 +185,7 @@
 
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

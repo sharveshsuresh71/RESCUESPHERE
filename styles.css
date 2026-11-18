@@ -140,3 +140,45 @@ ul,ol{list-style:none}
   .marquee-letters span,.marquee-letters em{animation:none}
   .reveal{opacity:1;transform:none;transition:none}
 }
+
+/* ---------- 3D + special effects ---------- */
+.progress{position:fixed;top:0;left:0;height:3px;width:100%;background:var(--lime);transform:scaleX(0);transform-origin:0 50%;z-index:50}
+.spot{position:fixed;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(179,224,74,.10),rgba(179,224,74,0) 60%);z-index:0;transition:opacity .4s}
+@media (hover:none){.spot{display:none}}
+
+/* hero 3D canvas is larger and sits behind the text */
+.hero .petals{left:36%;top:6%;width:min(680px,72vw);height:min(680px,72vw);z-index:1}
+
+/* split text: letters rise in one by one */
+.ch{display:inline-block;transform:translateY(60%);opacity:0;animation:chIn .7s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i) * 28ms)}
+@keyframes chIn{to{transform:none;opacity:1}}
+[data-split].split-ready{display:block}
+
+/* 3D room */
+.room3d{position:relative;height:110vh;margin:40px 0 0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#1c2412,#0b0d06 75%)}
+.room3d canvas{position:sticky;top:0;width:100%;height:100vh;display:block}
+.room-caption{position:absolute;left:28px;top:12vh;max-width:380px;z-index:2;pointer-events:none}
+.room-title{font-weight:300;font-size:clamp(48px,6vw,96px);line-height:.95;letter-spacing:-.03em}
+.room-title em{color:var(--lime)}
+.room-caption p{margin-top:16px;font-size:15px;line-height:1.5;color:#d6e6a3;max-width:320px}
+.room-legend{position:absolute;right:28px;bottom:28px;display:flex;gap:18px;font-size:13px;text-transform:uppercase;z-index:2}
+.room-legend span{display:inline-flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot.lime{background:var(--lime)} .dot.peach{background:var(--peach)} .dot.mint{background:var(--mint)}
+
+/* tilt cards and magnetic buttons */
+.tilt{transform-style:preserve-3d;transition:transform .25s ease,opacity .8s ease}
+.magnetic{transition:transform .3s cubic-bezier(.2,.7,.2,1),background .2s,color .2s}
+
+/* the hero title no longer needs the old line animation; letters do it */
+.hero-title .line{animation:none;opacity:1;transform:none}
+
+@media (max-width:960px){
+  .hero .petals{left:auto;right:-14%;top:auto;bottom:-4%;width:82vw;height:82vw}
+  .room-legend{display:none}
+  .room-caption{top:8vh}
+}
+@media (prefers-reduced-motion:reduce){
+  .ch{animation:none;opacity:1;transform:none}
+  .room3d canvas{position:relative;height:70vh}
+}
