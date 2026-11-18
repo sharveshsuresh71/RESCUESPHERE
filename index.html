@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>RescueSphere — Plan your safe exit</title>
   <meta name="description" content="RescueSphere helps you plan a safe escape route from every room, checked before you need it." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/styles/landing.css" />
 </head>
 <body>
@@ -24,8 +24,7 @@
       RescueSphere
     </a>
     <ul class="links">
-      <li><a href="#how">How it works</a></li>
-      <li><a href="#room">3D room</a></li>
+      <li><a href="#inside">How it works</a></li>
       <li><a href="#benefits">Benefits</a></li>
       <li><a href="#faq">FAQ</a></li>
       <li><a href="#roadmap">Roadmap</a></li>
@@ -36,49 +35,56 @@
 
 <main id="top">
 
-  <!-- HERO: 3D core with petal blades and orbit rings -->
-  <section class="hero">
-    <div class="slot" data-model="core" role="img" aria-label="3D model: a cut-away home with the escape route to the exit and the meeting point"></div>
-    <h1 class="hero-title" data-split>
-      <span class="line">Plan your</span>
-      <span class="line"><em>safe exit</em></span>
-    </h1>
-    <p class="hero-small">Escape routes, checked before you need them</p>
-    <p class="hero-foot" data-speed="-.15"><em>and that’s all</em></p>
-    <a class="cta magnetic" href="app.html" data-transition>Open the 3D planner <span aria-hidden="true">→</span></a>
-    <p class="hero-note">We are not a floor planner. We check one thing well: whether every room has a clear way out.</p>
-  </section>
+  <!-- HERO REEL: one 3D model per card; the colour circle grows from behind the model -->
+  <section class="rf-hero" id="reel" aria-roledescription="carousel" aria-label="RescueSphere 3D models">
+    <div class="rf-rv" aria-hidden="true"></div>
+    <h1 class="rf-kicker">RescueSphere · Plan your safe exit</h1>
+    <button class="rf-auto" id="reelAuto" aria-pressed="true" type="button"><span class="rf-ring" aria-hidden="true"></span>Autoplay</button>
 
-  <!-- HOW IT WORKS -->
-  <section class="how" id="how">
-    <h2 class="huge" data-split>How <em>it</em> works</h2>
-    <div class="slot" data-model="door" role="img" aria-label="3D model: a floor plan with the escape route drawn step by step"></div>
-    <ol class="steps">
-      <li class="reveal"><span class="n">Step 1</span><span class="t">Choose a room or upload a photo</span></li>
-      <li class="reveal"><span class="n">Step 2</span><span class="t">Add doors, windows and furniture</span></li>
-      <li class="reveal"><span class="n">Step 3</span><span class="t">Draw the route from the bed to the exit</span></li>
-      <li class="reveal"><span class="n">Step 4</span><span class="t">Done: a plan you can print and keep</span></li>
-    </ol>
-  </section>
-
-  <!-- 3D ROOM: scroll drives the camera; the escape route pulses toward the exit -->
-  <section class="room3d" id="room" aria-labelledby="room-title">
-    <div class="slot" data-model="room" role="img" aria-label="3D model: a furnished room with a lit exit door"></div>
-    <div class="room-caption">
-      <h2 id="room-title" class="room-title">Your room, <em>in 3D</em></h2>
-      <p>Scroll to orbit the room. The glowing line is the escape route; it turns amber if a door is blocked.</p>
+    <div class="rf-stage">
+      <div class="rf-item" data-name="Home" data-color="#b3e04a" data-sub="A cut-away home with the escape route to the exit and the meeting point.">
+        <div class="slot" data-model="core" role="img" aria-label="3D model: a cut-away home with the escape route to the exit and the meeting point"></div>
+      </div>
+      <div class="rf-item" data-name="Route" data-color="#f0a06a" data-sub="A floor plan with the escape route drawn step by step." hidden>
+        <div class="slot" data-model="door" role="img" aria-label="3D model: a floor plan with the escape route drawn step by step"></div>
+      </div>
+      <div class="rf-item" data-name="Room" data-color="#46c489" data-sub="A furnished room with a lit exit door." hidden>
+        <div class="slot" data-model="room" role="img" aria-label="3D model: a furnished room with a lit exit door"></div>
+      </div>
+      <div class="rf-item" data-name="Blocked" data-color="#9fb8d6" data-sub="A blocked corridor, with a warning and a detour." hidden>
+        <div class="slot" data-model="knot" role="img" aria-label="3D model: a blocked corridor with a warning and a detour"></div>
+      </div>
+      <div class="rf-item" data-name="Roadmap" data-color="#c9b0f0" data-sub="Three platforms, with a pulse reaching each one." hidden>
+        <div class="slot" data-model="path" role="img" aria-label="3D model: a roadmap with three platforms and a pulse reaching each"></div>
+      </div>
     </div>
-    <div class="room-legend" aria-hidden="true">
-      <span><i class="dot lime"></i>Exit</span>
-      <span><i class="dot peach"></i>Route</span>
-      <span><i class="dot mint"></i>Furniture</span>
+
+    <p class="rf-count" id="reelCount" aria-hidden="true">01</p>
+    <button class="rf-next" id="reelNext" type="button" aria-label="Next model">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+    </button>
+    <p class="rf-title" id="reelTitle" aria-live="polite">Home</p>
+    <p class="rf-sub" id="reelSub">A cut-away home with the escape route to the exit and the meeting point.</p>
+    <a class="rf-cta magnetic" href="app.html" data-transition>Open the 3D planner <span aria-hidden="true">→</span></a>
+  </section>
+
+  <!-- PINNED FLOW: the benefit model flips 180° at each step as you scroll -->
+  <section class="rf-inside" id="inside" aria-label="How it works">
+    <div class="rf-pin">
+      <p class="rf-label">How it works</p>
+      <div class="rf-caps">
+        <div class="rf-cap is-on"><span class="n">Step 01</span><h2>Pick a room</h2><p>Choose a room template or upload a photo of it.</p></div>
+        <div class="rf-cap"><span class="n">Step 02</span><h2>Place doors</h2><p>Add doors, windows and furniture, and enter their sizes.</p></div>
+        <div class="rf-cap"><span class="n">Step 03</span><h2>Draw the route</h2><p>Draw the route from the bed to the nearest exit.</p></div>
+        <div class="rf-cap"><span class="n">Step 04</span><h2>Keep it</h2><p>Done: a plan you can print and keep. Checked before you need it.</p></div>
+      </div>
+      <div class="slot" data-model="cubes" role="img" aria-label="3D model: four benefit tiles with icons, turning as you scroll"></div>
     </div>
   </section>
 
   <!-- BENEFITS -->
   <section class="benefits" id="benefits">
     <p class="kicker" data-split>Important <em>benefits</em> — a few things we did on purpose</p>
-    <div class="slot" data-model="cubes" role="img" aria-label="3D model: four benefit tiles with icons"></div>
     <div class="cards">
       <article class="card c1 reveal tilt">
         <p>Open the page, pick a room, and you have a plan. No account needed to try it.</p>
@@ -103,7 +109,6 @@
   <section class="problems">
     <div class="problems-inner">
       <h2 class="huge small" data-split><span>Problems</span> <em>that we</em> <em>solve</em></h2>
-      <div class="slot" data-model="knot" role="img" aria-label="3D model: a blocked corridor with a warning and a detour"></div>
       <div class="problem-list">
         <div class="problem reveal">
           <h3>Blocked exits go unnoticed</h3>
@@ -151,7 +156,6 @@
       <h2 class="rm-title" data-split>Project <em>roadmap</em></h2>
       <p class="rm-sub">Part of RescueSphere is ready now. We keep improving it based on your feedback.</p>
     </div>
-    <div class="slot" data-model="path" role="img" aria-label="3D model: a roadmap with three platforms and a pulse reaching each"></div>
     <div class="rm-grid">
       <div class="rm-item reveal"><span class="rm-mon">Now</span><span class="rm-day">01</span><span class="rm-label">{Room photos and route checks}</span></div>
       <div class="rm-item reveal"><span class="rm-mon">Next</span><span class="rm-day">02</span><span class="rm-label">{Floor scanner on compatible headsets}</span></div>

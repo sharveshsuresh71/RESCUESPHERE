@@ -155,7 +155,8 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
       v.cam.position.set(v.spec.camPos[0], v.spec.camPos[1], v.spec.camPos[2]);
       v.cam.lookAt(v.spec.camLook[0], v.spec.camLook[1], v.spec.camLook[2]);
 
-      v.pivot.rotation.set(v.rotX, v.rotY, 0);
+      const flipRad = (parseFloat(v.el.dataset.flip ?? '0') || 0) * Math.PI / 180;
+      v.pivot.rotation.set(v.rotX, v.rotY + flipRad, 0);
       v.pivot.position.set(v.panX, v.panY, 0);
       v.spec.assemble(easeOut(v.a));
       if (!reduced) for (const fn of v.spec.anim) fn(t);
