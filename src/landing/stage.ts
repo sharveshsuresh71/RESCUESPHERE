@@ -30,6 +30,11 @@ interface SlotView {
   drag: 'none' | 'rotate' | 'move';
   lx: number;
   ly: number;
+  /** hover (mouse) or tap lock drives the optional split; hoverT is the target, hover the eased value */
+  hoverT: number;
+  hover: number;
+  tapLock: boolean;
+  moved: boolean;
 }
 
 function easeOut(u: number): number { return 1 - Math.pow(1 - u, 3); }
@@ -81,13 +86,14 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
       el, spec, scene, pivot,
       cam: new THREE.PerspectiveCamera(32, 1, 0.1, 80),
       rotX: 0, rotY: 0, panX: 0, panY: 0,
-      visible: false, a: 0, drag: 'none', lx: 0, ly: 0
+      visible: false, a: 0, drag: 'none', lx: 0, ly: 0, hoverT: 0, hover: 0, tapLock: false, moved: false
     };
     views.push(view);
 
     el.addEventListener('pointerdown', (e) => {
       if (reduced && e.shiftKey) return;
       view.drag = e.shiftKey ? 'move' : 'rotate';
+      view.moved = false;
       view.lx = e.clientX;
       view.ly = e.clientY;
       el.setPointerCapture(e.pointerId);
@@ -99,6 +105,7 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
       const dy = e.clientY - view.ly;
       view.lx = e.clientX;
       view.ly = e.clientY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) view.moved = true;
       if (view.drag === 'rotate') {
         view.rotY += dx * 0.009;
         view.rotX = Math.min(1.1, Math.max(-1.1, view.rotX + dy * 0.006));
@@ -115,6 +122,14 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
     el.addEventListener('pointercancel', endDrag);
     el.addEventListener('dblclick', () => {
       view.rotX = 0; view.rotY = 0; view.panX = 0; view.panY = 0;
+    });
+
+    el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') view.hoverT = 1; });
+    el.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !view.tapLock) view.hoverT = 0; });
+    el.addEventListener('click', () => {
+      if (view.moved) return;
+      view.tapLock = !view.tapLock;
+      view.hoverT = view.tapLock ? 1 : 0;
     });
 
     const io = new IntersectionObserver((entries) => {
@@ -166,6 +181,8 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
       const flipRad = (parseFloat(v.el.dataset.flip ?? '0') || 0) * Math.PI / 180;
       v.pivot.rotation.set(v.rotX, v.rotY + flipRad, 0);
       v.pivot.position.set(v.panX, v.panY, 0);
+      v.hover += (v.hoverT - v.hover) * (1 - Math.exp(-dt * 5));
+      v.spec.explode?.(v.hover);
       v.spec.assemble(easeOut(v.a));
       if (!reduced) for (const fn of v.spec.anim) fn(t);
       renderer.render(v.scene, v.cam);

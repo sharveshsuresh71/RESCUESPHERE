@@ -23,6 +23,8 @@ export interface Spec {
   anim: Anim[];
   /** 0 = parts scattered, 1 = assembled */
   assemble: (p: number) => void;
+  /** optional: 0 = whole, 1 = split apart (driven by hover or tap) */
+  explode?: (h: number) => void;
   fit: number;
   offset: V3;
   camPos: V3;
@@ -113,85 +115,116 @@ function woodMat(): THREE.MeshStandardMaterial {
   return std(C.wood, 0.55, { map: woodMap ?? null });
 }
 
-/* 1. Hero: a cut-away home. The route runs from the bed to the exit; the meeting point is outside. */
+/* 1. Hero: an interactive cut-away home. Hover (or tap) splits it apart: the walls, the floor and the
+   furniture slide out along their own directions while the escape route stays lit. A pulse runs from
+   the bed to the exit, and the meeting point marker glows outside the door. */
 function buildCore(): Spec {
   const g = new THREE.Group();
-  const parts = new Parts();
   const anim: Anim[] = [];
   const wallM = std(C.wall, 0.95);
   const T = 0.16, WH = 1.5;
 
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(9, 0.1, 9), std(C.floor, 0.9))), 0, -0.2, 0);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(6.4, 0.16, 5.2, 0.02), woodMat())), 0, -0.08, 0);
-  // walls: back, left, right; front split to leave the exit gap; one interior wall with a gap
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(6.4, WH, T), wallM)), 0, WH / 2, -2.6 + T / 2);
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(T, WH, 5.2), wallM)), -3.2 + T / 2, WH / 2, 0);
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(T, WH, 5.2), wallM)), 3.2 - T / 2, WH / 2, 0);
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(2.5, WH, T), wallM)), -1.95, WH / 2, 2.6 - T / 2);
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(1.6, WH, T), wallM)), 2.4, WH / 2, 2.6 - T / 2);
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(T, WH, 1.6), wallM)), -0.2, WH / 2, -1.8);
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.BoxGeometry(T, WH, 1.4), wallM)), -0.2, WH / 2, 1.5);
-  // window on the back wall
-  put(g, parts, new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.8), new THREE.MeshPhysicalMaterial({ color: C.glass, roughness: 0.05, transmission: 0.2, transparent: true, opacity: 0.55 })), -1.4, 0.95, -2.5);
-  put(g, parts, new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 0.05), std(0xffffff, 0.5)), -1.4, 1.38, -2.5);
-  put(g, parts, new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 0.05), std(0xffffff, 0.5)), -1.4, 0.52, -2.5);
+  let split = 0;      // 0 = whole house, 1 = fully split apart (set on hover or tap)
+  let assembled = 0;  // 0 = scattered, 1 = assembled (set by the stage as the model comes in)
+  interface Piece { obj: THREE.Object3D; home: THREE.Vector3; dir: THREE.Vector3 }
+  const pieces: Piece[] = [];
 
-  // exit door: leaf on a hinge at the gap, opened outward, with a lit sign above
+  const apply = (): void => {
+    const k = split * 1.2 + (1 - assembled) * 1.6;
+    for (const pc of pieces) pc.obj.position.copy(pc.home).addScaledVector(pc.dir, k);
+  };
+
+  /* Place a piece at (x,y,z). When the house splits it leaves along dir. */
+  const place = <O extends THREE.Object3D>(o: O, x: number, y: number, z: number, dir: [number, number, number]): O => {
+    o.position.set(x, y, z);
+    g.add(o);
+    pieces.push({ obj: o, home: new THREE.Vector3(x, y, z), dir: new THREE.Vector3(...dir).normalize() });
+    return o;
+  };
+  const mesh = (geo: THREE.BufferGeometry, mat: THREE.Material): THREE.Mesh => shadowed(new THREE.Mesh(geo, mat));
+
+  // floor and base
+  place(mesh(new THREE.BoxGeometry(9, 0.1, 9), std(C.floor, 0.9)), 0, -0.2, 0, [0, -1, 0]);
+  place(mesh(rbox(6.4, 0.16, 5.2, 0.02), woodMat()), 0, -0.08, 0, [0, -1, 0]);
+
+  // walls: back, left, right; front split to leave the exit gap; two interior walls
+  place(mesh(new THREE.BoxGeometry(6.4, WH, T), wallM), 0, WH / 2, -2.6 + T / 2, [0, 0.2, -1]);
+  place(mesh(new THREE.BoxGeometry(T, WH, 5.2), wallM), -3.2 + T / 2, WH / 2, 0, [-1, 0.2, 0]);
+  place(mesh(new THREE.BoxGeometry(T, WH, 5.2), wallM), 3.2 - T / 2, WH / 2, 0, [1, 0.2, 0]);
+  place(mesh(new THREE.BoxGeometry(2.5, WH, T), wallM), -1.95, WH / 2, 2.6 - T / 2, [0, 0.2, 1]);
+  place(mesh(new THREE.BoxGeometry(1.6, WH, T), wallM), 2.4, WH / 2, 2.6 - T / 2, [0, 0.2, 1]);
+  place(mesh(new THREE.BoxGeometry(T, WH, 1.6), wallM), -0.2, WH / 2, -1.8, [0, 0.1, -1]);
+  place(mesh(new THREE.BoxGeometry(T, WH, 1.4), wallM), -0.2, WH / 2, 1.5, [0, 0.1, 1]);
+
+  // window on the back wall
+  place(new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.8), new THREE.MeshPhysicalMaterial({ color: C.glass, roughness: 0.05, transmission: 0.2, transparent: true, opacity: 0.55 })), -1.4, 0.95, -2.5, [0, 0, -1]);
+
+  // exit door on a hinge, opened outward, with a lit sign above
   const hinge = new THREE.Group();
-  hinge.position.set(0.7, 0, 2.6);
   hinge.rotation.y = -0.75;
-  const leaf = shadowed(new THREE.Mesh(rbox(0.9, 1.3, 0.05, 0.01), std(C.woodDark, 0.6)));
+  const leaf = mesh(rbox(0.9, 1.3, 0.05, 0.01), std(C.woodDark, 0.6));
   leaf.position.set(0.45, 0.65, 0);
   hinge.add(leaf);
-  g.add(hinge);
-  parts.add(hinge);
-  put(g, parts, new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.04), glow(C.lime, 1.4)), 1.15, WH - 0.1, 2.52);
+  place(hinge, 0.7, 0, 2.6, [0.6, 0.2, 1]);
+  place(mesh(new THREE.BoxGeometry(0.5, 0.12, 0.04), glow(C.lime, 1.4)), 1.15, WH - 0.1, 2.52, [0, 0.4, 1]);
 
-  // furniture in the bedroom: bed with headboard, pillow, blanket
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.7, 0.3, 2.2, 0.06), std(C.woodDark, 0.6))), -2.0, 0.15, -1.5);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.6, 0.2, 2.1, 0.08), std(C.linen, 0.9))), -2.0, 0.4, -1.5);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.7, 0.7, 0.12, 0.05), std(C.woodDark, 0.6))), -2.0, 0.42, -2.36);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(0.5, 0.14, 0.36, 0.06), std(0xffffff, 0.9))), -2.4, 0.56, -2.1);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.62, 0.06, 1.2, 0.03), std(C.fabricLt, 0.9))), -2.0, 0.53, -0.9);
-  // living room: sofa, table, plant
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.8, 0.34, 0.8, 0.1), std(C.fabric, 0.85))), 1.4, 0.17, -1.8);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.8, 0.5, 0.22, 0.1), std(C.fabric, 0.85))), 1.4, 0.5, -2.2);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(0.8, 0.14, 0.6, 0.05), std(C.cushion, 0.9))), 0.95, 0.4, -1.7);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(0.8, 0.14, 0.6, 0.05), std(C.cushion, 0.9))), 1.85, 0.4, -1.7);
-  put(g, parts, shadowed(new THREE.Mesh(rbox(1.0, 0.06, 0.6, 0.02), woodMat())), 1.0, 0.46, 0.4);
-  const tableLegs: [number, number][] = [[0.6, 0.2], [1.4, 0.2], [0.6, 0.6], [1.4, 0.6]];
-  for (const [x, z] of tableLegs) {
-    put(g, parts, shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.44, 12), std(C.woodDark, 0.5))), x, 0.22, z);
+  // bedroom: bed, mattress, headboard, pillow, blanket
+  place(mesh(rbox(1.7, 0.3, 2.2, 0.06), std(C.woodDark, 0.6)), -2.0, 0.15, -1.5, [0, 1, 0]);
+  place(mesh(rbox(1.6, 0.2, 2.1, 0.08), std(C.linen, 0.9)), -2.0, 0.4, -1.5, [0, 1, 0]);
+  place(mesh(rbox(1.7, 0.7, 0.12, 0.05), std(C.woodDark, 0.6)), -2.0, 0.42, -2.36, [0, 1, 0]);
+  place(mesh(rbox(0.5, 0.14, 0.36, 0.06), std(0xffffff, 0.9)), -2.4, 0.56, -2.1, [0, 1, 0]);
+  place(mesh(rbox(1.62, 0.06, 1.2, 0.03), std(C.fabricLt, 0.9)), -2.0, 0.53, -0.9, [0, 1, 0]);
+
+  // living room: sofa, cushions, table, plant
+  place(mesh(rbox(1.8, 0.34, 0.8, 0.1), std(C.fabric, 0.85)), 1.4, 0.17, -1.8, [0, 1, 0]);
+  place(mesh(rbox(1.8, 0.5, 0.22, 0.1), std(C.fabric, 0.85)), 1.4, 0.5, -2.2, [0, 1, 0]);
+  place(mesh(rbox(0.8, 0.14, 0.6, 0.05), std(C.cushion, 0.9)), 0.95, 0.4, -1.7, [0, 1, 0]);
+  place(mesh(rbox(0.8, 0.14, 0.6, 0.05), std(C.cushion, 0.9)), 1.85, 0.4, -1.7, [0, 1, 0]);
+  place(mesh(rbox(1.0, 0.06, 0.6, 0.02), woodMat()), 1.0, 0.46, 0.4, [0, 1, 0]);
+  for (const [x, z] of [[0.6, 0.2], [1.4, 0.2], [0.6, 0.6], [1.4, 0.6]] as [number, number][]) {
+    place(mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.44, 12), std(C.woodDark, 0.5)), x, 0.22, z, [0, 1, 0]);
   }
-  put(g, parts, shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.36, 18), std(C.terra, 0.8))), 2.4, 0.18, 1.8);
+  place(mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.36, 18), std(C.terra, 0.8)), 2.4, 0.18, 1.8, [0, 1, 0]);
   for (let i = 0; i < 9; i++) {
     const a = (i / 9) * Math.PI * 2;
-    put(g, parts, shadowed(new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 10), std(C.plant, 0.7))), 2.4 + Math.cos(a) * 0.15, 0.62 + (i % 3) * 0.12, 1.8 + Math.sin(a) * 0.15).scale.set(0.7, 1.4, 0.4);
+    const leafMesh = mesh(new THREE.SphereGeometry(0.16, 14, 10), std(C.plant, 0.7));
+    leafMesh.scale.set(0.7, 1.4, 0.4);
+    place(leafMesh, 2.4 + Math.cos(a) * 0.15, 0.62 + (i % 3) * 0.12, 1.8 + Math.sin(a) * 0.15, [Math.cos(a), 1, Math.sin(a)]);
   }
 
-  // escape route from the bed to the exit and beyond: a glowing tube with a pulse travelling along it
+  // escape route from the bed to the exit and beyond: a glowing tube, with a pulse travelling along it
   const routeCurve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-1.2, 0.12, -0.7), new THREE.Vector3(-0.2, 0.12, 0.6), new THREE.Vector3(0.6, 0.12, 1.6),
     new THREE.Vector3(1.15, 0.12, 2.4), new THREE.Vector3(1.15, 0.12, 3.3)
   ]);
+  const routeG = new THREE.Group();
   const routeMat = glow(C.peach, 1.1);
-  put(g, parts, new THREE.Mesh(new THREE.TubeGeometry(routeCurve, 160, 0.034, 10, false), routeMat), 0, 0, 0);
+  routeG.add(new THREE.Mesh(new THREE.TubeGeometry(routeCurve, 160, 0.034, 10, false), routeMat));
   const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10), glow(0xffffff, 2));
-  g.add(pulse);
+  routeG.add(pulse);
+  place(routeG, 0, 0, 0, [0, 0.4, 0]);
 
-  // meeting point outside the exit: a ground disc, a pin and a light
-  put(g, parts, new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.02, 40), std(C.tile, 0.9)), 1.15, -0.1, 3.6);
-  const pin = put(g, parts, new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 10), std(C.metal, 0.5)), 1.15, 0.3, 3.6);
-  const top = put(g, parts, new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), glow(C.mint, 1.6)), 1.15, 0.66, 3.6);
+  // meeting point outside the exit: a ground disc, a pin and a glowing marker
+  place(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.02, 40), std(C.tile, 0.9)), 1.15, -0.1, 3.6, [0.5, -0.2, 1]);
+  place(mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.6, 10), std(C.metal, 0.5)), 1.15, 0.3, 3.6, [0.5, 0, 1]);
+  const marker = place(mesh(new THREE.SphereGeometry(0.09, 16, 12), glow(C.mint, 1.6)), 1.15, 0.66, 3.6, [0.5, 0.6, 1]);
 
   anim.push((t) => {
-    const p = (t * 0.12) % 1;
-    pulse.position.copy(routeCurve.getPointAt(p));
+    pulse.position.copy(routeCurve.getPointAt((t * 0.12) % 1));
     routeMat.emissiveIntensity = 0.9 + 0.3 * Math.sin(t * 2);
-    top.position.y = 0.66 + Math.sin(t * 1.8) * 0.02;
-    pin.scale.y = 1 + Math.sin(t * 1.8) * 0.01;
+    marker.scale.setScalar(1 + 0.06 * Math.sin(t * 1.8));
   });
-  return { group: g, anim, assemble: (p) => parts.set(p), fit: 0.85, offset: [2.4, 0.2, 0], camPos: [6.4, 6.2, 7.6], camLook: [0, 0.4, 0] };
+
+  return {
+    group: g,
+    anim,
+    assemble: (p) => { assembled = p; apply(); },
+    explode: (h) => { split = h; apply(); },
+    fit: 0.85,
+    offset: [2.4, 0.2, 0],
+    camPos: [6.4, 6.2, 7.6],
+    camLook: [0, 0.4, 0]
+  };
 }
 
 /* 2. How it works: a floor plan. The route is drawn step by step, four markers light as it passes. */
