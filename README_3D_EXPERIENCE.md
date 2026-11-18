@@ -5,8 +5,8 @@ The root page (`index.html`) is now an immersive, full-screen 3D introduction in
 ## What changed
 
 - `index.html`: the landing page. It loads `src/landing/landing.ts` as a module.
-- `src/landing/models.ts`: eight 3D models, one per section: glossy core with petal blades (hero), exit door with an escape route, furnished room (shadows on), cubes, torus knot, orbit rings, helix path, crystal cluster.
-- `src/landing/stage.ts`: one full-page three.js stage. The model for the section in view eases in; the previous one shrinks away. Each change fires a particle burst and a shockwave ring, and the camera glides to that model's viewpoint with a short shake. A live cursor orb follows the pointer through the 3D space. The planner button zooms the camera in before navigating.
+- `src/landing/models.ts`: eight schematic, CAD-style models, one per section. Hero: wireframe room with a scan plane and route to the exit. How it works: floor plan with the route drawn step by step. Room: furnished CAD drawing with the exit lit. Benefits: 2x2 dashboard panels with live bars. Problems: corridor with a blocked route and a detour. FAQ: accordion rows that open in turn. Roadmap: timeline with a pulse reaching each milestone. Footer: ground grid with a scan sweep.
+- `src/landing/stage.ts`: one full-page stage. The model for the section in view eases in and the others fade out. A thin scan line sweeps on each change, the camera glides to each model's viewpoint, and a crosshair reticle tracks the pointer in 3D.
 - `src/landing/effects.ts`: letter-by-letter reveals, scroll progress, cursor spotlight, tilting cards, magnetic buttons, parallax headings, FAQ accordion, reveal on scroll, and the transition into the planner.
 - `src/styles/landing.css`: landing styles, including the planner button and the warp overlay.
 - `app.html`: the original room-planning application, unchanged.

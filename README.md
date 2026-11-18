@@ -4,6 +4,7 @@ A 3D landing page and a room-planning app, built with Vite, TypeScript, and thre
 
 - Landing page (`index.html`): full-page 3D stage with one model per section, transitions, live cursor, and scroll effects.
 - Planner (`app.html`): the room-planning workspace.
+- 3D viewer (`viewer.html`): inspect each section model. Orbit, zoom and pan; isometric, top, front and side presets; fill, speed, grid and axes controls; keyboard shortcuts (1–8 select, F fit, Space pause, G grid).
 
 ## Setup
 
