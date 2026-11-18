@@ -24,6 +24,7 @@ export class ExperienceStateManager {
   private readonly modules = new Map<ModuleId, ExperienceModule>();
   private readonly storage = new LocalStorageManager();
   private _currentModule: ModuleId = 'welcome';
+  private renderToken = 0;
   private _plan: RoomPlan;
   private readonly listeners: Array<(plan: RoomPlan) => void> = [];
 
@@ -76,8 +77,15 @@ export class ExperienceStateManager {
       throw new Error('Missing #module-host element.');
     }
 
-    host.replaceChildren();
-    module.render(host);
+    // the current panel fades out first; the next one renders once it has gone, so they never overlap
+    const token = ++this.renderToken;
+    const hadContent = host.children.length > 0;
+    [...host.children].forEach((child) => child.classList.add('is-leaving'));
+    window.setTimeout(() => {
+      if (token !== this.renderToken) return;
+      host.replaceChildren();
+      module.render(host);
+    }, hadContent ? 260 : 0);
   }
 
   next(): void {

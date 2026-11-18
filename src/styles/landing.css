@@ -269,8 +269,8 @@ main{position:relative;z-index:1}
 .rf-pin{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
 .rf-label{position:absolute;z-index:3;top:26px;left:28px;margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .rf-caps{position:absolute;z-index:3;left:28px;top:50%;transform:translateY(-50%);width:min(40vw,560px);display:grid}
-.rf-cap{grid-area:1/1;opacity:0;transform:translateY(14px);transition:opacity .45s ease,transform .6s cubic-bezier(.22,1,.36,1)}
-.rf-cap.is-on{opacity:1;transform:none}
+.rf-cap{grid-area:1/1;opacity:0;transform:translateY(14px);transition:opacity .3s ease,transform .3s ease}
+.rf-cap.is-on{opacity:1;transform:none;transition:opacity .7s cubic-bezier(.22,1,.36,1) .4s,transform .8s cubic-bezier(.22,1,.36,1) .4s}
 .rf-cap .n{display:block;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
 .rf-cap h2{font-weight:700;font-size:clamp(48px,6.4vw,104px);line-height:.9;letter-spacing:-.035em;text-transform:uppercase;margin-bottom:18px}
 .rf-cap p{font-size:17px;line-height:1.45;max-width:420px}

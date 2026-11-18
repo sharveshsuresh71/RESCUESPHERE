@@ -948,3 +948,9 @@ button.primary:focus-visible {
 
 /* softer ambient light so it never competes with the panel */
 .orb { opacity: 0.45; }
+
+/* panel leaving: fades out before the next module renders */
+#module-host > .is-leaving { animation: panel-leave 0.26s ease-in both; pointer-events: none; }
+@keyframes panel-leave {
+  to { opacity: 0; transform: translateY(-8px); filter: blur(3px); }
+}
