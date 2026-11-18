@@ -67,6 +67,7 @@ export class AppController {
           <button data-module="report"><i>▤</i><span>Plan report</span><b>09</b></button>
           <button data-module="dashboard"><i>◫</i><span>Dashboard</span><b>10</b></button>
         </nav>
+        <a class="training-link" href="training.html" style="display:block;margin:12px 16px;font-size:13px;color:#5cf2ff;text-decoration:none">Emergency exit training (simulated) →</a>
         <div class="sidebar-bottom"><span class="status-dot"></span><span>LOCAL SESSION ACTIVE</span><small>Data stays on this device</small></div>
       </aside>
       <section class="app-workspace">
