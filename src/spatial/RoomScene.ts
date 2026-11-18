@@ -55,6 +55,8 @@ export class RoomScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly roomGroup = new THREE.Group();
   private readonly routeGroup = new THREE.Group();
+  /** Holds the room and routes. In an immersive session it is moved in front of the viewer. */
+  private readonly world = new THREE.Group();
   private readonly clock = new THREE.Clock();
   private readonly animated: Animated[] = [];
   private readonly target = new THREE.Vector3(0, 0.6, 0);
@@ -90,7 +92,8 @@ export class RoomScene {
     rim.position.set(-6, 4, -7);
 
     this.floorTexture = makeWoodTexture();
-    this.scene.add(this.key, rim, this.roomGroup, this.routeGroup);
+    this.world.add(this.roomGroup, this.routeGroup);
+    this.scene.add(this.key, rim, this.world);
     this.createGrid();
     this.enableOrbit();
     this.renderer.setAnimationLoop(this.update);
@@ -127,6 +130,15 @@ export class RoomScene {
   setPassthroughMode(enabled: boolean): void {
     this.scene.background = enabled ? null : new THREE.Color(BACKGROUND);
     this.scene.fog = enabled ? null : new THREE.Fog(BACKGROUND, 14, 34);
+  }
+
+  /**
+   * In an immersive session the viewer's pose comes from the headset, so the
+   * room is moved about 2.5 m in front of the floor origin (1 unit = 1 m).
+   * Passing false restores the desktop placement.
+   */
+  setImmersiveLayout(immersive: boolean): void {
+    this.world.position.set(0, 0, immersive ? -2.5 : 0);
   }
 
   /** Smoothly moves the camera to a preset: 3D, top-down, side, or fitted to the room. */

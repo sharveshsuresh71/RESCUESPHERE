@@ -29,6 +29,7 @@ export class XRManager {
     this.scene = new RoomScene(renderer);
     this.createStatus();
     this.createEnterButton();
+    this.createVRButton();
     const enterButton = document.getElementById('enter-xr');
     if (enterButton) root.append(enterButton);
     this.handleResize(renderer);
@@ -123,10 +124,70 @@ export class XRManager {
     status.textContent = 'Desktop 3D mode · drag to orbit · scroll to zoom'; document.body.append(status);
   }
 
+  /**
+   * "Enter VR" button. It stays disabled until navigator.xr reports that
+   * immersive-vr is supported, so it never claims a session it cannot start.
+   */
+  private createVRButton(): void {
+    const button = document.createElement('button');
+    button.className = 'primary';
+    button.id = 'enter-vr';
+    button.textContent = 'Enter VR';
+    button.disabled = true;
+    Object.assign(button.style, { position: 'fixed', right: '16px', bottom: '64px', zIndex: '30' });
+    button.addEventListener('click', () => { void this.startVR(button); });
+    document.body.append(button);
+    void this.checkVRSupport(button);
+  }
+
+  private async checkVRSupport(button: HTMLButtonElement): Promise<void> {
+    let supported = false;
+    try {
+      supported = !!navigator.xr && await navigator.xr.isSessionSupported('immersive-vr');
+    } catch {
+      supported = false;
+    }
+    if (supported) {
+      button.disabled = false;
+      this.updateStatus('Immersive VR available · press Enter VR · desktop 3D mode remains available');
+    } else {
+      button.disabled = true;
+      this.updateStatus('Immersive VR is not available in this browser. Enable the Immersive Web Emulator or use a WebXR-capable headset; desktop 3D mode still works.');
+    }
+  }
+
+  private async startVR(button: HTMLButtonElement): Promise<void> {
+    if (this.session) { this.updateStatus('An XR session is already running. Exit it first.'); return; }
+    if (!navigator.xr || !this.renderer) { this.updateStatus('WebXR is unavailable here. Desktop 3D mode remains available.'); return; }
+    button.disabled = true;
+    try {
+      // requestSession must run synchronously inside the click gesture, so it is the first await here.
+      const session = await navigator.xr.requestSession('immersive-vr', {
+        optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+      });
+      this.session = session;
+      await this.renderer.xr.setSession(session);
+      this.scene?.setPassthroughMode(false);
+      this.scene?.setImmersiveLayout(true);
+      this.updateStatus('Immersive VR active · end the session from your headset or the emulator to return.');
+      session.addEventListener('end', () => {
+        if (this.session === session) this.session = null;
+        this.scene?.setImmersiveLayout(false);
+        button.disabled = false;
+        this.updateStatus('VR session ended · desktop 3D mode available');
+      }, { once: true });
+    } catch (error) {
+      this.session = null;
+      button.disabled = false;
+      this.updateStatus(`Could not start VR: ${error instanceof Error ? error.message : 'permission or device error'}. Desktop 3D mode remains available.`);
+    }
+  }
+
   private createEnterButton(): void {
     const button = document.createElement('button'); button.className = 'primary'; button.id = 'enter-xr';
     button.textContent = 'Enter Mixed Reality'; button.style.position = 'fixed'; button.style.right = '16px'; button.style.bottom = '16px'; button.style.zIndex = '30';
     button.addEventListener('click', async () => {
+      if (this.session) { this.updateStatus('An XR session is already running. Exit it first.'); return; }
       if (!navigator.xr || !this.renderer) { this.updateStatus('WebXR is unavailable here. Use a WebXR-capable browser and compatible headset; desktop mode remains available.'); return; }
       let mode: XRSessionMode | null = null;
       try { if (await navigator.xr.isSessionSupported('immersive-ar')) mode = 'immersive-ar'; else if (await navigator.xr.isSessionSupported('immersive-vr')) mode = 'immersive-vr'; } catch { mode = null; }
