@@ -1,1315 +1,172 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>RescueSphere — See your space. Plan your escape.</title>
-<meta name="description" content="Explore your space in 3D, identify obstacles, and prepare a safer evacuation plan with RescueSphere. Created by Sharvesh Suresh, Shark Webs.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600&family=Petrona:ital,wght@0,300;0,400;1,300;1,400&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-/* RescueSphere landing: midnight indigo with soft light, same palette and type as the planner. */
-:root{
-  --paper:#0c0f26;--paper-2:#151a40;--surface:#171c45;--surface-2:#1e2452;
-  --ink:#eef1ff;--muted:#a6aed3;--accent:#8ea0ff;--accent-2:#4a63ff;
-  --teal:#3fd3c0;--violet:#a58bff;--red:#ff6b74;
-  --line:rgba(238,241,255,.12);--line-strong:rgba(238,241,255,.26);
-  --glass:rgba(22,27,66,.7);
-  --serif:"Petrona",Georgia,serif;--sans:"Familjen Grotesk",system-ui,sans-serif;--mono:"Red Hat Mono",ui-monospace,monospace;
-  --shadow:0 24px 60px rgba(0,0,0,.45);
-  color-scheme:dark;box-sizing:border-box;
-}
-*{box-sizing:border-box}
-html{scroll-padding-top:90px;scroll-behavior:smooth}
-html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
-body{overflow-x:hidden}
-p{margin:0 0 20px;color:var(--muted);max-width:48ch}
-h1,h2,h3{font-weight:400;margin:0}
-a{color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition-duration:.001ms!important;animation-duration:.001ms!important;animation-iteration-count:1!important}}
-.skip{position:absolute;left:-9999px;top:8px;z-index:60;background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:8px}
-.skip:focus{left:12px}
-
-/* background: midnight wash with soft light glows behind the fixed 3D canvas */
-.wash{position:fixed;inset:0;z-index:0;pointer-events:none;background:
-  radial-gradient(ellipse 60% 55% at 72% 46%,rgba(60,40,110,.35) 0%,rgba(60,40,110,0) 70%),
-  linear-gradient(180deg,#02030a 0%,#05061a 100%)}
-#gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block}
-#space{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
-
-/* header */
-header.top{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 48px;background:rgba(12,15,38,.72);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
-header.top.scrolled{border-bottom-color:var(--line)}
-.logo{font-family:var(--serif);font-size:19px;letter-spacing:.01em;color:var(--ink);text-decoration:none;display:flex;align-items:center;gap:10px}
-.logo .mark{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff 0%,#8ea0ff 30%,#3d5afe 70%);color:#0c0f26;font-size:16px;box-shadow:0 0 18px rgba(142,160,255,.45)}
-.logo em{font-style:italic;color:var(--accent)}
-header.top nav{display:flex;align-items:center;gap:28px;font-size:15px}
-header.top nav a{color:var(--muted);text-decoration:none;transition:color .2s}
-header.top nav a:hover,header.top nav a[aria-current="true"]{color:var(--ink)}
-.pill{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:12px 22px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(255,255,255,.02);color:var(--ink);font:500 16px var(--sans);text-decoration:none;cursor:pointer;transition:background .25s,border-color .25s,color .25s,transform .25s,box-shadow .25s}
-.pill:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
-.pill.solid{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.pill.solid:hover{background:var(--accent-2);border-color:var(--accent-2);color:#fff;box-shadow:0 12px 32px rgba(74,99,255,.4)}
-header.top nav a.nav-cta{min-height:42px;padding:9px 18px;font-size:15px}
-
-/* chapter dots (right) */
-.dots{position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:20;display:flex;flex-direction:column;gap:14px;align-items:center}
-.dots button{position:relative;width:12px;height:12px;padding:0;border-radius:50%;border:1.5px solid var(--ink);background:transparent;cursor:pointer;transition:transform .3s,background .3s,border-color .3s}
-.dots button:hover,.dots button:focus-visible{transform:scale(1.25)}
-.dots button.on{background:var(--accent);border-color:var(--accent);transform:scale(1.3);box-shadow:0 0 12px rgba(142,160,255,.7)}
-.dots button span{position:absolute;right:22px;top:50%;transform:translateY(-50%);white-space:nowrap;font:500 13px var(--mono);color:var(--muted);opacity:0;pointer-events:none;transition:opacity .25s}
-.dots button:hover span,.dots button:focus-visible span,.dots button.on span{opacity:1}
-
-/* credit chip */
-.credit-chip{position:fixed;left:24px;bottom:22px;z-index:25;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(22,27,66,.78);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.3);font:500 14px var(--sans);color:var(--ink);backdrop-filter:blur(10px)}
-.credit-chip b{font-weight:600}
-.credit-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(142,160,255,.18),0 0 12px rgba(142,160,255,.7)}
-.credit-chip span.sub{color:var(--muted)}
-
-/* hero */
-.hero{position:relative;z-index:5;min-height:100vh;min-height:100svh;display:flex;align-items:center;padding:130px 7vw 100px}
-.hero-box{max-width:600px}
-.kicker{font:500 13px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:22px;display:flex;align-items:center;gap:10px}
-.kicker::before{content:"";width:28px;height:1px;background:var(--accent)}
-h1{font-family:var(--serif);font-size:clamp(44px,6vw,84px);line-height:1.02;letter-spacing:-.02em;color:var(--ink);margin-bottom:26px}
-h1 em{font-style:italic;background:linear-gradient(120deg,#c9d2ff 0%,#8ea0ff 45%,#a58bff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{font-size:20px;color:var(--muted);max-width:44ch;margin-bottom:34px}
-.btns{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.btns .pill{min-height:52px;padding:14px 26px;font-size:17px}
-.trust{margin-top:44px;display:flex;flex-wrap:wrap;gap:28px;font:500 13px var(--mono);letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
-.trust span{display:flex;align-items:center;gap:8px}
-.trust span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal)}
-
-/* scroll runway: 750vh; the stage inside is sticky */
-.runway{position:relative;z-index:5;height:750vh}
-.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;pointer-events:none}
-.chapwrap{position:absolute;left:7vw;bottom:15vh;width:min(470px,38vw);pointer-events:none}
-.chap{position:absolute;left:0;bottom:0;width:100%;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
-.chap.on{opacity:1;transform:none}
-.chap-n{font:500 13px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
-.chap h2{font-family:var(--serif);font-size:clamp(34px,3.8vw,54px);line-height:1.05;letter-spacing:-.015em;margin-bottom:16px;color:var(--ink)}
-.chap h2 em{font-style:italic;color:var(--accent)}
-.chap p{font-size:18px;margin:0;color:var(--muted)}
-
-/* hero: guided 3D room */
-.hero-room{position:absolute;right:11vw;top:50%;transform:translateY(-50%);width:min(560px,40vw);aspect-ratio:5/4;border-radius:24px;overflow:hidden;border:1px solid var(--line-strong);background:radial-gradient(circle at 50% 30%,rgba(124,92,240,.2),rgba(12,15,38,0) 70%),rgba(12,15,38,.35);box-shadow:0 30px 80px rgba(0,0,0,.5);z-index:6}
-.hero-room canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block}
-.hr-tag{position:absolute;left:18px;top:16px;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);z-index:2}
-.hr-legend{position:absolute;right:16px;top:16px;display:flex;gap:12px;font:500 11px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase;z-index:2}
-.hr-legend span{display:flex;align-items:center;gap:6px}
-.hr-legend i{display:inline-block;width:8px;height:8px;border-radius:50%}
-.lg-you{background:#fff;box-shadow:0 0 8px #8ea0ff}
-.lg-ob{background:#f0a84a}
-.lg-exit{background:#29d8ff}
-.hr-assist{position:absolute;left:14px;bottom:14px;display:flex;align-items:center;gap:10px;padding:9px 16px 9px 9px;border-radius:999px;background:rgba(22,27,66,.85);border:1px solid var(--line);font-size:14px;color:var(--ink);backdrop-filter:blur(10px);z-index:2}
-.hr-ico{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff,#8ea0ff 40%,#3d5afe);color:#0c0f26;font-size:13px}
-@media (max-width:1100px){.hero-room{display:none}}
-
-/* below the runway: shared section chrome */
-section.block{position:relative;z-index:5;padding:120px 7vw;background:linear-gradient(180deg,rgba(12,15,38,0) 0%,rgba(19,24,62,.92) 18%,rgba(19,24,62,.92) 100%)}
-.eyebrow{font:500 13px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
-h2.h{font-family:var(--serif);font-size:clamp(36px,4.4vw,60px);line-height:1.06;letter-spacing:-.015em;margin-bottom:18px}
-h2.h em{font-style:italic;color:var(--accent)}
-.wrap{max-width:1180px;margin:0 auto}
-.intro{font-size:19px;max-width:60ch;margin-bottom:8px}
-
-/* 3D preview with captions */
-.preview{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center}
-.preview-frame{position:relative;aspect-ratio:4/3;border-radius:24px;border:1px solid var(--line);background:radial-gradient(circle at 50% 46%,rgba(124,92,240,.22),rgba(12,15,38,0) 62%),var(--surface);box-shadow:var(--shadow);overflow:hidden;display:grid;place-items:center}
-.preview-frame::after{content:"";position:absolute;inset:0;background:linear-gradient(160deg,rgba(255,255,255,.08),transparent 40%);pointer-events:none}
-.preview-3d{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
-.preview-tag{z-index:2}
-.preview-orb{position:absolute;width:58%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff 0%,#a58bff 16%,#7c5cf0 42%,#3d5afe 70%,rgba(12,15,38,0) 74%);box-shadow:0 0 80px rgba(124,92,240,.55),inset -20px -30px 60px rgba(12,15,38,.5);animation:orb-spin 16s linear infinite}
-.preview-ring{position:absolute;width:86%;aspect-ratio:1;border-radius:50%;border:1px dashed rgba(142,160,255,.35);transform:rotateX(70deg)}
-.preview-ring.r2{width:72%;border-color:rgba(63,211,192,.35);transform:rotateX(70deg) rotateZ(30deg)}
-.preview-tag{position:absolute;left:18px;top:16px;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.captions{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.cap{padding:20px;border-radius:18px;border:1px solid var(--line);background:var(--surface);transition:transform .3s,border-color .3s,box-shadow .3s}
-.cap:hover{transform:translateY(-3px);border-color:rgba(142,160,255,.4);box-shadow:0 18px 40px rgba(0,0,0,.35)}
-.cap i{display:block;width:12px;height:12px;border-radius:50%;margin-bottom:14px;box-shadow:0 0 14px currentColor}
-.cap h3{font-family:var(--serif);font-size:21px;margin-bottom:6px;color:var(--ink)}
-.cap p{font-size:15px;margin:0}
-.c-teal{color:var(--teal);background:var(--teal)}
-.c-blue{color:var(--accent);background:var(--accent)}
-.c-red{color:var(--red);background:var(--red)}
-.c-violet{color:var(--violet);background:var(--violet)}
-
-/* feature strip with icons */
-.strip{margin-top:96px;display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.strip-item{display:flex;flex-direction:column;gap:12px;padding:28px 18px;border-right:1px solid var(--line);color:var(--ink);font-size:15px}
-.strip-item:last-child{border-right:0}
-.strip-item svg{width:28px;height:28px;stroke:var(--accent);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(142,160,255,.5))}
-.strip-item span{color:var(--muted);font-size:14px;line-height:1.45}
-
-/* timeline */
-.timeline{position:relative;margin:56px 0 0;padding:0;list-style:none;display:grid;gap:0}
-.timeline::before{content:"";position:absolute;left:19px;top:10px;bottom:10px;width:1px;background:linear-gradient(180deg,var(--accent),rgba(165,139,255,.2))}
-.timeline li{position:relative;display:grid;grid-template-columns:40px 1fr;gap:22px;padding:0 0 34px}
-.timeline li:last-child{padding-bottom:0}
-.t-dot{position:relative;z-index:1;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--paper-2);border:1px solid var(--line-strong);font:500 13px var(--mono);color:var(--accent)}
-.timeline li.done .t-dot{background:var(--accent-2);border-color:var(--accent-2);color:#fff;box-shadow:0 0 18px rgba(74,99,255,.55)}
-.t-body h3{font-family:var(--serif);font-size:26px;line-height:1.15;margin:6px 0 8px;color:var(--ink)}
-.t-body p{margin:0;font-size:16px}
-
-/* cards */
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:48px}
-.card{position:relative;padding:28px 26px 30px;border:1px solid var(--line);border-radius:18px;background:var(--surface);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s,border-color .35s}
-.card:hover,.card:focus-within{transform:translateY(-6px);box-shadow:0 22px 50px rgba(74,99,255,.25);border-color:rgba(142,160,255,.45)}
-.card .num{font:500 13px var(--mono);color:var(--accent);letter-spacing:.1em;margin-bottom:18px;display:block}
-.card h3{font-family:var(--serif);font-size:25px;line-height:1.15;margin-bottom:10px;color:var(--ink)}
-.card p{font-size:16px;margin:0}
-
-/* safety & privacy panel */
-.safety{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
-.panel{padding:36px;border-radius:24px;border:1px solid var(--line);background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%),var(--surface);box-shadow:var(--shadow)}
-.panel h3{font-family:var(--serif);font-size:clamp(28px,3vw,38px);line-height:1.1;margin-bottom:14px;color:var(--ink)}
-.panel ul{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:14px}
-.panel li{display:flex;gap:12px;align-items:flex-start;color:var(--ink);font-size:16px}
-.panel li::before{content:"";flex:0 0 8px;height:8px;margin-top:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal)}
-.panel.warn li::before{background:var(--red);box-shadow:0 0 10px var(--red)}
-
-.cta{margin-top:64px;padding:44px;border-radius:24px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(124,92,240,.22) 0%,rgba(61,90,254,.10) 100%),var(--surface);display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
-.cta h3{font-family:var(--serif);font-size:clamp(28px,3vw,40px);line-height:1.1;margin-bottom:8px}
-.cta p{margin:0}
-.cta .btns{flex-wrap:nowrap}
-
-footer.foot{position:relative;z-index:5;padding:56px 7vw 110px;background:var(--paper);border-top:1px solid var(--line)}
-footer.foot .row{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-start;max-width:1180px;margin:0 auto}
-footer.foot p{font-size:15px;margin:0 0 10px;max-width:70ch}
-footer.foot .made{font:500 15px var(--sans);color:var(--ink)}
-footer.foot .made span{color:var(--muted)}
-
-@keyframes orb-spin{to{transform:rotate(360deg)}}
-@media (hover:none){.card:hover{transform:none;box-shadow:none}}
-
-/* small screens */
-@media (max-width:1000px){
-  .chapwrap{width:min(440px,50vw)}
-  header.top nav a.hide-md{display:none}
-  .preview{grid-template-columns:1fr}
-  .strip{grid-template-columns:repeat(3,1fr)}
-  .strip-item:nth-child(3){border-right:0}
-  .strip-item:nth-child(-n+3){border-bottom:1px solid var(--line)}
-  .safety{grid-template-columns:1fr}
-}
-@media (max-width:760px){
-  html,body{font-size:16px}
-  header.top{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
-  header.top nav a:not(.nav-cta){display:none}
-  .logo{font-size:17px}
-  .hero{padding:118px 18px 180px;align-items:flex-start;background:none}
-  h1{font-size:clamp(40px,11.4vw,52px)}
-  .lead{font-size:18px}
-  .chapwrap{left:18px;right:18px;bottom:88px;width:auto}
-  .chap{position:relative;display:none;background:rgba(12,15,38,.9);padding:20px;border-radius:18px;box-shadow:var(--shadow)}
-  .chap.on{display:block}
-  .chap h2{font-size:32px}
-  .chap p{font-size:16px}
-  .dots{display:none}
-  .credit-chip{left:14px;right:14px;bottom:14px;justify-content:center;font-size:13px;padding:9px 14px}
-  section.block{padding:90px 18px}
-  .captions{grid-template-columns:1fr}
-  .strip{grid-template-columns:repeat(2,1fr)}
-  .strip-item{border-right:0 !important;border-bottom:1px solid var(--line)}
-  .strip-item:nth-child(odd){border-right:1px solid var(--line) !important}
-  .panel{padding:26px}
-  .cta{padding:28px}
-  .cta .btns{flex-wrap:wrap}
-  footer.foot{padding:44px 18px 120px}
-}
-/* no WebGL: the chapters and cards still work */
-body.nogl #gl{display:none}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RescueSphere — Plan your safe exit</title>
+  <meta name="description" content="RescueSphere helps you plan a safe escape route from every room, checked before you need it." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<a class="skip" href="#how">Skip to the overview</a>
-<div class="wash" aria-hidden="true"></div>
-<canvas id="space" aria-hidden="true"></canvas>
-<canvas id="gl" aria-hidden="true"></canvas>
 
-
-<header class="top" id="top-bar">
-  <a class="logo" href="#top" aria-label="RescueSphere home"><span class="mark" aria-hidden="true">R</span><span>Rescue<em>Sphere</em></span></a>
-  <nav aria-label="Main navigation">
-    <a href="#top" aria-current="true" class="hide-md">Explore</a>
-    <a href="#preview" class="hide-md">Preview</a>
-    <a href="#how">How it works</a>
-    <a href="#safety-panels">Safety</a>
-    <a class="pill solid nav-cta" href="app.html">Start planning</a>
+<header class="nav-wrap">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="#top">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg>
+      RescueSphere
+    </a>
+    <ul class="links">
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#benefits">Benefits</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+    </ul>
+    <a class="pill" href="#join">Get started</a>
   </nav>
 </header>
 
-<div class="dots" id="dots" role="group" aria-label="Chapters">
-  <button type="button" data-chapter="0" aria-label="Chapter 1: Surface"><span>01 Surface</span></button>
-  <button type="button" data-chapter="1" aria-label="Chapter 2: Structure"><span>02 Structure</span></button>
-  <button type="button" data-chapter="2" aria-label="Chapter 3: Core"><span>03 Core</span></button>
-  <button type="button" data-chapter="3" aria-label="Chapter 4: Sphere"><span>04 Sphere</span></button>
-</div>
+<main id="top">
 
-<div class="credit-chip" role="contentinfo"><span class="dot" aria-hidden="true"></span><span><b>Created by Sharvesh Suresh</b> <span class="sub">· Shark Webs</span></span></div>
-
-<main id="main">
-  <section class="hero" id="top-hero" aria-labelledby="hero-title">
-    <div class="wm" aria-hidden="true">RescueSphere</div>
-    <div class="hero-box">
-      <div class="kicker">Home preparedness, in 3D</div>
-      <h1 id="hero-title">See your space.<br><em>Plan your escape.</em></h1>
-      <p class="lead">Explore your space in 3D, understand the risks, map your exits, and prepare a clear evacuation plan before an emergency happens.</p>
-      <div class="btns">
-        <button class="pill solid" type="button" data-go="runway">Explore the experience <span aria-hidden="true">↓</span></button>
-        <a class="pill" href="app.html">Open planner <span aria-hidden="true">→</span></a>
-      </div>
-      <div class="trust"><span>Private, on this device</span><span>Built around your room</span><span>Free to use</span></div>
-    </div>
-  <div class="hero-room" id="hero-room" aria-hidden="true">
-    <canvas></canvas>
-    <span class="hr-tag">Guided escape route · live</span>
-    <div class="hr-legend"><span><i class="lg-you"></i>You</span><span><i class="lg-ob"></i>Obstacle</span><span><i class="lg-exit"></i>Exit</span></div>
-    <div class="hr-assist"><span class="hr-ico">✦</span><span>Follow the glowing path to the exit.</span></div>
-  </div>
+  <!-- HERO -->
+  <section class="hero">
+    <h1 class="hero-title">
+      <span class="line">Plan your</span>
+      <span class="line"><em>safe exit</em></span>
+    </h1>
+    <p class="hero-small">Escape routes, checked before you need them</p>
+    <canvas id="petals" class="petals" aria-hidden="true"></canvas>
+    <p class="hero-foot"><em>and that’s all</em></p>
+    <p class="hero-note">We are not a floor planner. We check one thing well: whether every room has a clear way out.</p>
   </section>
 
-  <div class="runway" id="runway" aria-label="Scroll chapters">
-    <div class="stage">
-      <div class="chapwrap" aria-live="polite">
-        <article class="chap on" data-i="0">
-          <p class="chap-n">01 · Surface</p>
-          <h2>Start with <em>your room.</em></h2>
-          <p>Shape a digital version of your space: walls, doors, windows and furniture, all kept on this device.</p>
-        </article>
-        <article class="chap" data-i="1">
-          <p class="chap-n">02 · Structure</p>
-          <h2>Find the <em>way out.</em></h2>
-          <p>Map up to two exits, then compare Route A and Route B, measured around the obstacles you mark.</p>
-        </article>
-        <article class="chap" data-i="2">
-          <p class="chap-n">03 · Core</p>
-          <h2>See what <em>slows you down.</em></h2>
-          <p>Mark up to three obstacles and see which furniture and gaps sit closest to your routes.</p>
-        </article>
-        <article class="chap" data-i="3">
-          <p class="chap-n">04 · Sphere</p>
-          <h2>Plan it <em>together.</em></h2>
-          <p>Choose an outdoor meeting point and bring the five-item preparedness list into one printable report.</p>
-        </article>
-      </div>
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <h2 class="huge">How <em>it</em> works</h2>
+    <ol class="steps">
+      <li class="reveal"><span class="n">Step 1</span><span class="t">Choose a room or upload a photo</span></li>
+      <li class="reveal"><span class="n">Step 2</span><span class="t">Add doors, windows and furniture</span></li>
+      <li class="reveal"><span class="n">Step 3</span><span class="t">Draw the route from the bed to the exit</span></li>
+      <li class="reveal"><span class="n">Step 4</span><span class="t">Done: a plan you can print and keep</span></li>
+    </ol>
+  </section>
+
+  <!-- BENEFITS (lime cards) -->
+  <section class="benefits" id="benefits">
+    <p class="kicker">Important <em>benefits</em> — a few things we did on purpose</p>
+    <div class="cards">
+      <article class="card c1 reveal">
+        <p>Yeah, it’s almost a no-code decision. Open the page, pick a room, and you have a plan. No account needed to try it.</p>
+        <h3>Simple</h3>
+      </article>
+      <article class="card c2 reveal">
+        <p>We do one job: check that every room has a clear route to a door or window. Nothing extra to get in the way.</p>
+        <h3>One job</h3>
+      </article>
+      <article class="card c3 reveal">
+        <p>Built for people who are not technical, and for anyone who wants a quick check of a home or office.</p>
+        <h3>For everyone</h3>
+      </article>
+      <article class="card c4 reveal">
+        <p>Your photos and plans stay in your browser. We do not upload them anywhere unless you choose to share.</p>
+        <h3>Private</h3>
+      </article>
     </div>
-  </div>
+  </section>
 
-  <section class="block" id="preview" aria-labelledby="preview-title">
-    <div class="wrap">
-      <div class="eyebrow">3D preview</div>
-      <div class="preview">
-        <div class="preview-frame">
-          <span class="preview-tag">3D preview · sphere view</span>
-          <canvas class="preview-3d" id="orb3d" aria-hidden="true"></canvas>
-          <canvas class="preview-3d" id="orb2d" role="img" aria-label="A glossy violet sphere with snow falling past it"></canvas>
+  <!-- PROBLEMS (lime panel) -->
+  <section class="problems">
+    <div class="problems-inner">
+      <h2 class="huge small"><span>Problems</span> <em>that we</em> <em>solve</em></h2>
+      <div class="problem-list">
+        <div class="problem reveal">
+          <h3>Blocked exits go unnoticed</h3>
+          <p>A wardrobe or sofa can block a door without anyone noticing. The route check flags it before it matters.</p>
         </div>
-        <div>
-          <h2 class="h" id="preview-title">Four views of <em>one room.</em></h2>
-          <p style="margin-bottom:26px">Every view in the scroll sequence is built from the same room data, so what you see is what you plan.</p>
-          <div class="captions">
-            <div class="cap"><i class="c-teal"></i><h3>Surface</h3><p>The room as a dot wireframe, with the door set into the front wall.</p></div>
-            <div class="cap"><i class="c-blue"></i><h3>Structure</h3><p>Nodes joined to their nearest neighbours, mapping how spaces connect.</p></div>
-            <div class="cap"><i class="c-red"></i><h3>Core</h3><p>Hazards in red, linked by the path you need to avoid.</p></div>
-            <div class="cap"><i class="c-violet"></i><h3>Sphere</h3><p>The shell, exit rings and beacon that gather the whole plan.</p></div>
-          </div>
+        <div class="problem reveal">
+          <h3>Plans are hard to make</h3>
+          <p>Most people never write down how they would leave a room in an emergency. Ours takes about a minute.</p>
         </div>
-      </div>
-
-      <div class="strip" aria-label="Key features">
-        <div class="strip-item"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Private by default<span>Room data stays in this browser.</span></div>
-        <div class="strip-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>3D room model<span>Walls, doors and furniture in space.</span></div>
-        <div class="strip-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4h10v17"/><path d="M4 21h16"/><circle cx="13" cy="12" r="0.8"/></svg>Exit mapping<span>Up to two exits, clearly marked.</span></div>
-        <div class="strip-item"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/></svg>Route comparison<span>Route A against Route B.</span></div>
-        <div class="strip-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.5v.5"/></svg>Obstacle warnings<span>See what slows you down.</span></div>
-        <div class="strip-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Meeting point<span>One spot, away from the building.</span></div>
+        <div class="problem reveal">
+          <h3>Nobody wants a complicated app</h3>
+          <p>Open it, pick a room, and start. No training needed.</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="block" id="how" aria-labelledby="how-title">
-    <div class="wrap">
-      <div class="eyebrow">How it works</div>
-      <h2 class="h" id="how-title">Everything in <em>one plan.</em></h2>
-      <p class="intro">RescueSphere is a planning aid for your home. Each step feeds the next, and your room data never leaves your browser.</p>
-      <ol class="timeline">
-        <li><span class="t-dot">01</span><div class="t-body"><h3>Exit mapping</h3><p>Mark every door and window you could use.</p></div></li>
-        <li><span class="t-dot">02</span><div class="t-body"><h3>Obstacle awareness</h3><p>Spot furniture and gaps that slow you down.</p></div></li>
-        <li><span class="t-dot">03</span><div class="t-body"><h3>Route comparison</h3><p>Compare Route A and Route B by length and blockers.</p></div></li>
-        <li><span class="t-dot">04</span><div class="t-body"><h3>Meeting point</h3><p>One spot everyone knows, away from the building.</p></div></li>
-        <li><span class="t-dot">05</span><div class="t-body"><h3>Report and dashboard</h3><p>Save a one-page report and re-run the drill when your room changes.</p></div></li>
-      </ol>
-      <div class="cards">
-        <div class="card" tabindex="0"><span class="num">01</span><h3>Exit mapping</h3><p>Mark every door and window you could use.</p></div>
-        <div class="card" tabindex="0"><span class="num">02</span><h3>Obstacle awareness</h3><p>Spot furniture and gaps that slow you down.</p></div>
-        <div class="card" tabindex="0"><span class="num">03</span><h3>Route comparison</h3><p>Compare Route A and Route B by length and blockers.</p></div>
-        <div class="card" tabindex="0"><span class="num">04</span><h3>Meeting point</h3><p>One spot everyone knows, away from the building.</p></div>
-        <div class="card" tabindex="0"><span class="num">05</span><h3>Report and dashboard</h3><p>Save a one-page report and re-run the drill when your room changes.</p></div>
-      </div>
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <h2 class="huge faq-title"><span>F</span><em>A</em><span>Q</span></h2>
+    <ul class="accordion">
+      <li class="open">
+        <button class="q" aria-expanded="true"><span class="num">01</span><span class="qt">Is RescueSphere a floor planner?</span><span class="ic">↑</span></button>
+        <div class="a"><p>No. It checks escape routes from each room. It is not built to design the whole layout of a home.</p></div>
+      </li>
+      <li>
+        <button class="q" aria-expanded="false"><span class="num">02</span><span class="qt">How do I start a plan?</span><span class="ic">↓</span></button>
+        <div class="a"><p>Choose a room template, enter its size, then add doors, windows and furniture. Draw the route from the bed to the nearest exit.</p></div>
+      </li>
+      <li>
+        <button class="q" aria-expanded="false"><span class="num">03</span><span class="qt">Are my photos uploaded anywhere?</span><span class="ic">↓</span></button>
+        <div class="a"><p>No. Photos are kept in your browser tab and are never sent to our servers.</p></div>
+      </li>
+      <li>
+        <button class="q" aria-expanded="false"><span class="num">04</span><span class="qt">Is it free?</span><span class="ic">↓</span></button>
+        <div class="a"><p>The basic plan is free. Extra features may be offered later.</p></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="roadmap" id="roadmap">
+    <div class="rm-head">
+      <h2 class="rm-title">Project <em>roadmap</em></h2>
+      <p class="rm-sub">Part of RescueSphere is ready now. We keep improving it based on your feedback.</p>
+    </div>
+    <div class="rm-grid">
+      <div class="rm-item reveal"><span class="rm-mon">Now</span><span class="rm-day">01</span><span class="rm-label">{Room photos and route checks}</span></div>
+      <div class="rm-item reveal"><span class="rm-mon">Next</span><span class="rm-day">02</span><span class="rm-label">{Floor scanner on compatible headsets}</span></div>
+      <div class="rm-item reveal"><span class="rm-mon">Later</span><span class="rm-day">03</span><span class="rm-label">{Printable plans and family sharing}</span></div>
     </div>
   </section>
 
-  <section class="block" id="safety-panels" aria-labelledby="safety-title">
-    <div class="wrap">
-      <div class="eyebrow">Safety and privacy</div>
-      <h2 class="h" id="safety-title">Built to <em>stay yours.</em></h2>
-      <div class="safety" style="margin-top:40px">
-        <div class="panel">
-          <h3>Your data, your device.</h3>
-          <p>Room layouts, checklist progress and your meeting-point label are saved only in this browser. Nothing is uploaded to a server.</p>
-          <ul>
-            <li>No account needed to plan</li>
-            <li>Clear your browser data to remove everything</li>
-            <li>Works without sending your floor plan anywhere</li>
-          </ul>
-        </div>
-        <div class="panel warn">
-          <h3>A planning aid, not a guarantee.</h3>
-          <p>RescueSphere is educational. It does not guarantee safety or replace emergency services and official local guidance.</p>
-          <ul>
-            <li>Measure every dimension and exit in person</li>
-            <li>Follow local emergency authority guidance</li>
-            <li>Practise the drill with everyone in the home</li>
-          </ul>
-        </div>
+  <!-- FOOTER -->
+  <footer class="footer" id="join">
+    <div class="marquee-letters" aria-hidden="true">
+      <span>Rescue</span><em>Sphere</em><span>Plan</span><em>Safe</em>
+    </div>
+    <div class="foot-cols">
+      <div>
+        <a class="brand" href="#top">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg>
+          RescueSphere
+        </a>
       </div>
-      <div class="cta">
-        <div>
-          <h3>Preparedness starts <em style="font-style:italic;color:var(--accent)">here.</em></h3>
-          <p>Turn your room layout into a practical plan. Review your exits, reduce obstacles, and make sure everyone knows where to meet.</p>
-        </div>
-        <div class="btns">
-          <a class="pill solid" href="app.html">Start planning <span aria-hidden="true">↗</span></a>
-          <button class="pill" type="button" data-go="top">Back to top</button>
-        </div>
+      <div>
+        <h4>Contact us</h4>
+        <p><a href="mailto:hello@rescuesphere.example">[ hello@rescuesphere.example ]</a></p>
+      </div>
+      <div>
+        <h4>Join the beta</h4>
+        <form id="joinForm" class="join-form">
+          <input type="email" placeholder="Your email" aria-label="Email address" required />
+          <button type="submit">[ Join ]</button>
+        </form>
+        <p id="joinMsg" class="join-msg" role="status"></p>
       </div>
     </div>
-  </section>
+    <div class="legal">
+      <span>© 2026 RescueSphere</span>
+      <span>Dimensions are estimates. Verify with a tape measure.</span>
+      <span><a href="#">Privacy</a> · <a href="#">Terms</a></span>
+    </div>
+  </footer>
+
 </main>
 
-<footer class="foot" id="safety">
-  <div class="row">
-    <div>
-      <p><b>Safety first.</b> RescueSphere is educational. It does not guarantee safety, replace emergency services, or replace official local guidance. Verify every dimension and exit in person.</p>
-      <p>Room data is saved only in this browser.</p>
-    </div>
-    <div class="made">Created by Sharvesh Suresh <span>· Shark Webs</span></div>
-  </div>
-</footer>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function(){
-'use strict';
-const $=(s,r=document)=>r.querySelector(s);
-const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const NAMES=['Surface','Structure','Core','Sphere'];
-const runway=$('#runway'), bar=$('#top-bar');
-const chaps=[...document.querySelectorAll('.chap')];
-const dots=[...document.querySelectorAll('#dots button')];
-
-/* scroll progress lives in plain variables, never in React or framework state */
-let pt=0, ps=0, lastIdx=-1, burst=0;
-function targetP(){
-  const top=runway.getBoundingClientRect().top;
-  const total=Math.max(1,runway.offsetHeight-innerHeight);
-  return clamp(-top/total,0,1);
-}
-function setChapter(idx){
-  if(idx===lastIdx) return;
-  if(lastIdx!==-1&&!reduce) burst=1;
-  lastIdx=idx;
-  chaps.forEach((c,i)=>{ c.classList.toggle('on',i===idx); c.setAttribute('aria-hidden',i===idx?'false':'true'); });
-  dots.forEach((d,i)=>{ d.classList.toggle('on',i===idx); if(i===idx) d.setAttribute('aria-current','step'); else d.removeAttribute('aria-current'); });
-}
-function goTo(p){
-  const top=runway.getBoundingClientRect().top+scrollY;
-  scrollTo({top:top+p*Math.max(1,runway.offsetHeight-innerHeight),behavior:reduce?'auto':'smooth'});
-}
-dots.forEach((d,i)=>d.addEventListener('click',()=>goTo((i+.5)/4)));
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{
-  if(b.dataset.go==='top') scrollTo({top:0,behavior:reduce?'auto':'smooth'});
-  else goTo(0.02);
-}));
-addEventListener('scroll',()=>bar.classList.toggle('scrolled',scrollY>8),{passive:true});
-setChapter(0);
-
-/* chapters follow scroll even when WebGL is unavailable */
-function chapterOnly(){ setChapter(Math.min(3,Math.floor(targetP()*4))); }
-addEventListener('scroll',()=>{ if(document.body.classList.contains('nogl')) chapterOnly(); },{passive:true});
-
-function boot(){
-  const canvas=$('#gl');
-  let renderer;
-  try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'}); }
-  catch(e){ document.body.classList.add('nogl'); chapterOnly(); return; }
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
-  renderer.setClearColor(0x000000,0);
-
-  const scene=new THREE.Scene();
-  const cam=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,220);
-  cam.position.set(0,0,38);
-  function resize(){ renderer.setSize(innerWidth,innerHeight,false); cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix(); }
-  addEventListener('resize',resize); resize();
-
-  /* soft round sprite so points read as dots on the light background */
-  const gc=document.createElement('canvas'); gc.width=gc.height=64;
-  const g2=gc.getContext('2d'), gr=g2.createRadialGradient(32,32,0,32,32,32);
-  gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.6,'rgba(255,255,255,.9)'); gr.addColorStop(1,'rgba(255,255,255,0)');
-  g2.fillStyle=gr; g2.fillRect(0,0,64,64);
-  const TEX=new THREE.CanvasTexture(gc);
-
-  /* each material keeps its base opacity so fades never compound */
-  const pointMat=(color,size,op)=>{ const m=new THREE.PointsMaterial({color,size,map:TEX,transparent:true,opacity:op,depthWrite:false,sizeAttenuation:true}); m.userData.base=op; return m; };
-  const lineMat=(color,op)=>{ const m=new THREE.LineBasicMaterial({color,transparent:true,opacity:op,depthWrite:false}); m.userData.base=op; return m; };
-  const geo=arr=>{ const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3)); return g; };
-  function rng(seed){ return function(){ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-  function fib(n,r,out){ const ga=Math.PI*(3-Math.sqrt(5)); for(let i=0;i<n;i++){ const y=1-(i/(n-1))*2, rad=Math.sqrt(Math.max(0,1-y*y)), th=ga*i; out.push(Math.cos(th)*rad*r,y*r,Math.sin(th)*rad*r); } return out; }
-
-  /* Surface: the room as a dot wireframe, with a door cut into the front wall */
-  function roomGroup(){
-    const W=5.2,H=3,D=3.8,out=[];
-    const c=[]; for(const x of[-W,W])for(const y of[-H,H])for(const z of[-D,D]) c.push([x,y,z]);
-    const line=(a,b,n)=>{ for(let k=0;k<=n;k++){ const t=k/n; out.push(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t); } };
-    for(let i=0;i<c.length;i++)for(let j=i+1;j<c.length;j++){
-      const d=(c[i][0]!==c[j][0])+(c[i][1]!==c[j][1])+(c[i][2]!==c[j][2]);
-      if(d===1) line(c[i],c[j],44);
-    }
-    for(let i=-4;i<=4;i++){ line([i*W/4.5,-H,-D],[i*W/4.5,-H,D],22); line([-W,-H,i*D/4.5],[W,-H,i*D/4.5],22); }
-    line([.9,-H,D],[.9,.2,D],18); line([2.5,-H,D],[2.5,.2,D],18); line([.9,.2,D],[2.5,.2,D],18);
-    const g=new THREE.Group(); const m=pointMat(0x3d5afe,.085,.85);
-    g.add(new THREE.Points(geo(out),m)); g.userData.mats=[m]; return g;
-  }
-  /* Structure: a node network, each node joined to its two nearest neighbours */
-  function networkGroup(){
-    const r=rng(11), P=[];
-    for(let i=0;i<130;i++){ const u=r()*2-1, th=r()*Math.PI*2, s=Math.sqrt(1-u*u), rad=4.6+r()*1.2; P.push([Math.cos(th)*s*rad,u*rad,Math.sin(th)*s*rad]); }
-    const seen=new Set(), seg=[];
-    for(let i=0;i<P.length;i++){
-      const ds=[];
-      for(let j=0;j<P.length;j++){ if(j===i) continue; const dx=P[i][0]-P[j][0],dy=P[i][1]-P[j][1],dz=P[i][2]-P[j][2]; ds.push([dx*dx+dy*dy+dz*dz,j]); }
-      ds.sort((a,b)=>a[0]-b[0]);
-      for(const [,j] of ds.slice(0,2)){
-        const key=i<j?i*1000+j:j*1000+i; if(seen.has(key)) continue; seen.add(key);
-        seg.push(...P[i],...P[j]);
-      }
-    }
-    const nodes=[]; P.forEach(p=>nodes.push(...p));
-    const lm=lineMat(0x3d5afe,.28), pm=pointMat(0x0f9f8f,.3,.9);
-    const g=new THREE.Group();
-    g.add(new THREE.LineSegments(geo(seg),lm)); g.add(new THREE.Points(geo(nodes),pm));
-    g.userData.mats=[lm,pm]; return g;
-  }
-  /* Core: two hazard points joined by a path, in red */
-  function hazardGroup(){
-    const r=rng(5), pts=fib(340,2.1,[]), b=fib(340,2.1,[]);
-    for(let i=0;i<pts.length;i+=3) pts[i]-=3.4;
-    for(let i=0;i<b.length;i+=3) b[i]+=3.4;
-    const bar=[];
-    for(let i=0;i<260;i++){ const x=-3.2+6.4*r(), rr=.55*Math.sqrt(r()), th=r()*Math.PI*2; bar.push(x,rr*Math.cos(th),rr*Math.sin(th)); }
-    const m=pointMat(0xd9434f,.13,.9);
-    const g=new THREE.Group(); g.add(new THREE.Points(geo([...pts,...b,...bar]),m)); g.userData.mats=[m]; return g;
-  }
-  /* Sphere: the rescue sphere, its shell, three exit rings and a beacon, in violet */
-  function sphereGroup(){
-    const shell=fib(2400,4.6,[]), core=fib(160,.9,[]), rings=[];
-    for(let k=0;k<3;k++){
-      for(let i=0;i<200;i++){
-        const a=i/200*Math.PI*2, v=new THREE.Vector3(Math.cos(a)*6.2,0,Math.sin(a)*6.2);
-        v.applyEuler(new THREE.Euler(k*.9,k*1.3,0)); rings.push(v.x,v.y,v.z);
-      }
-    }
-    const m1=pointMat(0xa58bff,.14,1), m2=pointMat(0xd2c6ff,.16,1), m3=pointMat(0x8ea0ff,.3,1);
-    const g=new THREE.Group();
-    g.add(new THREE.Points(geo(shell),m1)); g.add(new THREE.Points(geo(rings),m2)); g.add(new THREE.Points(geo(core),m3));
-    g.userData.mats=[m1,m2,m3]; return g;
-  }
-
-  const forms=[
-    {g:roomGroup(),blow:true},
-    {g:networkGroup(),blow:true},
-    {g:hazardGroup(),blow:true},
-    {g:sphereGroup(),blow:false},
-  ];
-  forms.forEach(f=>{ f.g.visible=false; scene.add(f.g); });
-
-  /* dust: 14,000 points on a spherical shell, drifting with noise */
-  const DN=14000, dBase=new Float32Array(DN*3), dCur=new Float32Array(DN*3), dOff=new Float32Array(DN*3);
-  { const r=rng(99); for(let i=0;i<DN;i++){ const u=r()*2-1, th=r()*Math.PI*2, s=Math.sqrt(1-u*u), rad=5+r()*17; dBase[i*3]=Math.cos(th)*s*rad; dBase[i*3+1]=u*rad; dBase[i*3+2]=Math.sin(th)*s*rad; } dCur.set(dBase); }
-  const dGeo=new THREE.BufferGeometry(); dGeo.setAttribute('position',new THREE.BufferAttribute(dCur,3));
-  const dustMat=pointMat(0x0f9f8f,.075,.45);
-  scene.add(new THREE.Points(dGeo,dustMat));
-
-  /* palette per chapter: teal → blue/violet → red → violet */
-  const STOPS=[[0,'#0f9f8f'],[.22,'#3d5afe'],[.42,'#7c5cf0'],[.52,'#d9434f'],[.72,'#d9434f'],[.88,'#7c5cf0'],[1,'#7c5cf0']].map(([p,c])=>[p,new THREE.Color(c)]);
-  const tmpC=new THREE.Color();
-  function palette(p){
-    for(let i=0;i<STOPS.length-1;i++){
-      const a=STOPS[i][0], b=STOPS[i+1][0];
-      if(p<=b){ const u=b===a?0:clamp((p-a)/(b-a),0,1); return tmpC.copy(STOPS[i][1]).lerp(STOPS[i+1][1],u); }
-    }
-    return tmpC.copy(STOPS[STOPS.length-1][1]);
-  }
-
-  /* pointer: a soft ripple in the dust, and a slight camera sway */
-  const mouse={x:0,y:0,on:false}, hit=new THREE.Vector3(), hitS=new THREE.Vector3(), vTmp=new THREE.Vector3(), dirTmp=new THREE.Vector3();
-  function onPointer(e){ mouse.x=e.clientX/innerWidth*2-1; mouse.y=-(e.clientY/innerHeight)*2+1; mouse.on=true; }
-  addEventListener('pointermove',onPointer,{passive:true});
-  addEventListener('pointerdown',onPointer,{passive:true});
-
-  /* scroll-driven form state: grow in from tiny, hold, blow past the camera */
-  function formState(t,blow){
-    if(t<=0) return [0,0];
-    if(t<.35){ const u=t/.35, e=1-Math.pow(1-u,3); return [Math.max(.02,e),Math.min(1,u*2.2)]; }
-    if(t<.6||!blow) return [1,1];
-    const u=(t-.6)/.4; return [1+12*u*u*u,1-u];
-  }
-
-  let T=0, last=performance.now(), ready=false;
-  const loader=null;
-  function frame(now){
-    requestAnimationFrame(frame);
-    const dt=Math.min(.05,(now-last)/1000); last=now; T+=dt;
-    pt=targetP();
-    ps=reduce?pt:ps+(pt-ps)*(1-Math.exp(-6*dt));
-    if(Math.abs(ps-pt)<1e-5) ps=pt;
-    setChapter(Math.min(3,Math.floor(ps*4)));
-
-    forms.forEach((f,i)=>{
-      const t=clamp((ps-i*.25)/.25,0,1);
-      const [s,o]=formState(t,f.blow);
-      f.g.visible=s>.002&&o>.002;
-      f.g.scale.setScalar(Math.max(.002,s));
-      f.g.rotation.y=T*.12+(reduce?0:mouse.x*.3);
-      f.g.rotation.x=.2+(reduce?0:mouse.y*.14);
-      f.g.userData.mats.forEach(m=>{ m.opacity=m.userData.base*o; });
-    });
-
-    palette(ps); dustMat.color.copy(tmpC);
-    burst*=Math.exp(-2.6*dt);
-
-    const sway=reduce?0:1;
-    cam.position.x+=(mouse.x*2.4*sway-cam.position.x)*.05;
-    cam.position.y+=(mouse.y*1.4*sway-cam.position.y)*.05;
-    cam.lookAt(0,0,0); cam.updateMatrixWorld();
-
-    /* dust: noise drift plus a rippling push from the pointer */
-    const driftAmp=reduce?0:.55;
-    if(mouse.on&&!reduce){
-      vTmp.set(mouse.x,mouse.y,.5).unproject(cam);
-      dirTmp.copy(vTmp).sub(cam.position).normalize();
-      const k=-cam.position.z/(dirTmp.z||-1e-4);
-      hit.copy(cam.position).addScaledVector(dirTmp,k);
-      hitS.lerp(hit,1-Math.exp(-10*dt));
-    }
-    const hx=hitS.x,hy=hitS.y,hz=hitS.z, R=6.5, R2=R*R, pushK=mouse.on&&!reduce?3.2:0;
-    const decay=Math.exp(-2.4*dt);
-    const bK=burst*dt*6;
-    for(let i=0;i<DN;i++){
-      const i3=i*3, bx=dBase[i3], by=dBase[i3+1], bz=dBase[i3+2];
-      const nx=Math.sin(by*.31+T*.35)+Math.cos(bz*.27-T*.22);
-      const ny=Math.sin(bz*.29+T*.3)+Math.cos(bx*.33+T*.25);
-      const nz=Math.sin(bx*.26-T*.28)+Math.cos(by*.24+T*.19);
-      let ox=dOff[i3]*decay, oy=dOff[i3+1]*decay, oz=dOff[i3+2]*decay;
-      if(pushK>0){
-        const dx=bx+dCur[i3]-hx, dy=by+dCur[i3+1]-hy, dz=bz+dCur[i3+2]-hz;
-        const d2=dx*dx+dy*dy+dz*dz;
-        if(d2<R2){
-          const d=Math.sqrt(d2)+1e-4, f=(1-d/R)*(1-d/R)*(.6+.4*Math.sin(d*2.2-T*6))*pushK*dt;
-          ox+=dx/d*f; oy+=dy/d*f; oz+=dz/d*f;
-        }
-      }
-      if(bK>.0005){ const L2=Math.sqrt(bx*bx+by*by+bz*bz)+1e-3; ox+=bx/L2*bK; oy+=by/L2*bK; oz+=bz/L2*bK; }
-      dOff[i3]=ox; dOff[i3+1]=oy; dOff[i3+2]=oz;
-      dCur[i3]=bx+nx*driftAmp+ox; dCur[i3+1]=by+ny*driftAmp+oy; dCur[i3+2]=bz+nz*driftAmp+oz;
-    }
-    dGeo.attributes.position.needsUpdate=true;
-
-    renderer.render(scene,cam);
-    ready=true;
-  }
-  document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
-  requestAnimationFrame(frame);
-}
-if(typeof THREE!=='undefined'){
-  if(document.readyState==='complete') boot(); else addEventListener('load',boot);
-} else {
-  document.body.classList.add('nogl');
-  chapterOnly();
-}
-})();
-</script>
-<script>
-/* Guided 3D room, v2: a furnished living room built from detailed models.
-   Intro: the shell rises, furniture settles in one piece at a time, the camera dollies in, and the route draws itself.
-   Loop: a scan sweep passes through the room and lights the obstacles, and each lap of the route
-   swings the exit door open and sends out a ring. */
-(function(){
-  const host=document.getElementById('hero-room');
-  if(!host||typeof THREE==='undefined') return;
-  const canvas=host.querySelector('canvas');
-  let renderer;
-  try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); }
-  catch(e){ host.style.display='none'; return; }
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
-  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.outputEncoding=THREE.sRGBEncoding;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
-
-  const scene=new THREE.Scene();
-  scene.fog=new THREE.Fog(0x0c0f26,11,26);
-  const cam=new THREE.PerspectiveCamera(36,1,.1,100);
-  const W=6,L=5,H=2.4;
-
-  /* ---------- lights ---------- */
-  scene.add(new THREE.HemisphereLight(0xdfe8ff,0x1b1f4f,.8));
-  const key=new THREE.DirectionalLight(0xffffff,1.45);
-  key.position.set(3,8,5); key.castShadow=true;
-  key.shadow.mapSize.set(1024,1024);
-  const sh=key.shadow.camera; sh.left=-6; sh.right=6; sh.top=6; sh.bottom=-6; sh.near=1; sh.far=25;
-  key.shadow.bias=-0.0006;
-  scene.add(key);
-  const rim=new THREE.DirectionalLight(0x8ea0ff,.5); rim.position.set(-5,4,-6); scene.add(rim);
-  const lampLight=new THREE.PointLight(0xffd9a0,0,6.5,1.6); lampLight.position.set(-2.6,1.55,.9); scene.add(lampLight);
-
-  /* ---------- helpers ---------- */
-  const M=(color,rough,extra)=>new THREE.MeshStandardMaterial(Object.assign({color,roughness:rough,metalness:0},extra||{}));
-  const clamp01=v=>Math.min(1,Math.max(0,v));
-  const prog=(t,t0,d)=>clamp01((t-t0)/d);
-  const easeOut=u=>1-Math.pow(1-u,3);
-  const easeInOut=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
-  const easeBack=u=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(u-1,3)+c1*Math.pow(u-1,2);};
-
-  /* rounded, softly bevelled box: reads as upholstery and furniture rather than cubes */
-  function softBox(w,h,d,r){
-    const b=Math.min(.05,d*.3,w*.3,h*.3);
-    const sw=w-2*b, shh=h-2*b, rr=Math.max(.001,Math.min(r,sw/2,shh/2));
-    const s=new THREE.Shape(); const x=-sw/2, y=-shh/2;
-    s.moveTo(x+rr,y); s.lineTo(x+sw-rr,y); s.quadraticCurveTo(x+sw,y,x+sw,y+rr);
-    s.lineTo(x+sw,y+shh-rr); s.quadraticCurveTo(x+sw,y+shh,x+sw-rr,y+shh);
-    s.lineTo(x+rr,y+shh); s.quadraticCurveTo(x,y+shh,x,y+shh-rr);
-    s.lineTo(x,y+rr); s.quadraticCurveTo(x,y,x+rr,y);
-    const dep=Math.max(.001,d-2*b);
-    const geo=new THREE.ExtrudeGeometry(s,{depth:dep,bevelEnabled:true,bevelThickness:b,bevelSize:b,bevelSegments:3,curveSegments:6});
-    geo.translate(0,0,-dep/2);
-    return geo;
-  }
-  function soft(g,w,h,d,r,m,x,y,z){
-    const mesh=new THREE.Mesh(softBox(w,h,d,r),m); mesh.position.set(x,y,z);
-    mesh.castShadow=true; mesh.receiveShadow=true; g.add(mesh); return mesh;
-  }
-  function bx(g,w,h,d,m,x,y,z){
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); mesh.position.set(x,y,z);
-    mesh.castShadow=true; mesh.receiveShadow=true; g.add(mesh); return mesh;
-  }
-  function cyl(g,rt,rb,h,seg,m,x,y,z){
-    const mesh=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),m); mesh.position.set(x,y,z);
-    mesh.castShadow=true; g.add(mesh); return mesh;
-  }
-  function lathe(g,pts,seg,m,x,y,z){
-    const mesh=new THREE.Mesh(new THREE.LatheGeometry(pts.map(p=>new THREE.Vector2(p[0],p[1])),seg),m);
-    mesh.position.set(x,y,z); mesh.castShadow=true; g.add(mesh); return mesh;
-  }
-
-  /* ---------- materials ---------- */
-  const fabTeal=M(0x287f83,.85), fabLt=M(0x3aa3a6,.85), fabDk=M(0x1e626b,.85);
-  const woodM=M(0xa6744a,.6), woodDk=M(0x6b4a2f,.6), woodLt=M(0xc28b52,.55);
-  const brass=M(0xd9b26a,.3,{metalness:.8});
-  const violet=M(0x7c5cf0,.8), blue=M(0x4a63ff,.8), cream=M(0xf1e6d2,.4);
-  const terra=M(0xb5673b,.75);
-  const leafM=[M(0x3f8f5a,.7),M(0x4fae6b,.7),M(0x2f7a4a,.7)];
-  const chairM=M(0xd49a53,.8), chairDk=M(0x9c6a38,.8);
-  const metal=M(0x46566a,.5,{metalness:.4});
-  const doorM=M(0xb88a5c,.6), frameM=M(0x5a3d26,.6);
-  const shadeMat=new THREE.MeshStandardMaterial({color:0xfff1d6,emissive:0xffd9a0,emissiveIntensity:.7,roughness:.6,side:THREE.DoubleSide,transparent:true,opacity:.92});
-
-  /* ---------- textures ---------- */
-  function woodTex(){
-    const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d');
-    for(let i=0;i<8;i++){
-      const s=.9+Math.random()*.16;
-      g.fillStyle='rgb('+(154*s|0)+','+(118*s|0)+','+(86*s|0)+')'; g.fillRect(0,i*32,256,32);
-      for(let k=0;k<4;k++){ g.fillStyle='rgba(60,36,18,'+(.05+Math.random()*.07)+')'; g.fillRect(0,i*32+Math.random()*30,256,1+Math.random()*2); }
-      g.fillStyle='rgba(40,24,12,.45)'; g.fillRect(0,i*32,256,2); g.fillRect(Math.random()*256,i*32,2,32);
-    }
-    const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,2.5); t.encoding=THREE.sRGBEncoding; return t;
-  }
-  function stripeTex(rx){
-    const c=document.createElement('canvas'); c.width=128; c.height=64; const g=c.getContext('2d');
-    g.fillStyle='#e3e9f7'; g.fillRect(0,0,128,64);
-    g.fillStyle='#cdd6ec'; g.fillRect(0,0,6,64); g.fillRect(64,0,6,64);
-    const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,1); t.encoding=THREE.sRGBEncoding; return t;
-  }
-  function skyTex(){
-    const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d');
-    const gr=g.createLinearGradient(0,0,0,256); gr.addColorStop(0,'#0b1238'); gr.addColorStop(.6,'#2d4bb8'); gr.addColorStop(1,'#7fa2ff');
-    g.fillStyle=gr; g.fillRect(0,0,256,256);
-    let seed=7; const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
-    g.fillStyle='rgba(255,255,255,.85)';
-    for(let i=0;i<46;i++) g.fillRect(rnd()*256,rnd()*150,1.6,1.6);
-    const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t;
-  }
-
-  /* ---------- furniture models (origin on the floor, facing +z) ---------- */
-  function sofa(){
-    const g=new THREE.Group();
-    soft(g,1.7,.3,.8,.1,fabTeal,0,.17,0);
-    soft(g,1.7,.66,.2,.1,fabTeal,0,.6,-.3);
-    soft(g,.18,.5,.8,.08,fabDk,-.76,.4,0);
-    soft(g,.18,.5,.8,.08,fabDk,.76,.4,0);
-    for(const x of [-.43,0,.43]){
-      soft(g,.41,.13,.6,.05,fabLt,x,.37,.06);
-      soft(g,.41,.4,.14,.07,fabLt,x,.62,-.2);
-    }
-    for(const x of [-.8,.8]) for(const z of [-.32,.32]) cyl(g,.03,.025,.1,10,woodDk,x,.05,z);
-    return g;
-  }
-  function table(){
-    const g=new THREE.Group();
-    soft(g,1.0,.06,.6,.03,woodLt,0,.72,0);
-    soft(g,.84,.03,.5,.01,woodDk,0,.2,0);
-    for(const x of [-.42,.42]) for(const z of [-.22,.22]) cyl(g,.028,.022,.7,12,woodDk,x,.36,z);
-    soft(g,.24,.04,.17,.01,violet,-.2,.77,.08);
-    soft(g,.2,.035,.15,.01,blue,-.19,.815,.07);
-    lathe(g,[[0,0],[.06,0],[.08,.08],[.05,.2],[.07,.28],[.035,.3],[0,.3]],28,cream,.28,.75,-.12);
-    return g;
-  }
-  function wardrobe(){
-    const g=new THREE.Group();
-    soft(g,.92,.08,.52,.01,woodDk,0,.04,0);
-    soft(g,.9,1.82,.5,.03,woodM,0,1.0,0);
-    soft(g,.94,.06,.56,.02,woodLt,0,1.93,0);
-    for(const x of [-.225,.225]) soft(g,.42,1.7,.04,.02,woodLt,x,1.0,.27);
-    for(const x of [-.04,.04]) cyl(g,.012,.012,.22,10,brass,x,1.0,.31);
-    return g;
-  }
-  function plant(){
-    const g=new THREE.Group();
-    lathe(g,[[0,0],[.12,0],[.15,.14],[.16,.24],[.17,.27],[.15,.28],[0,.28]],28,terra,0,0,0);
-    for(let k=0;k<18;k++){
-      const a=k*2.399, rr=.04+.12*(((k*37)%10)/10), y=.42+(k/17)*.6;
-      const leaf=new THREE.Mesh(new THREE.SphereGeometry(.1,12,8),leafM[k%3]);
-      leaf.scale.set(.6,1.6,.25);
-      leaf.position.set(Math.cos(a)*rr,y,Math.sin(a)*rr);
-      leaf.rotation.set(k%2?.4:-.4,a,.5);
-      leaf.castShadow=true; g.add(leaf);
-    }
-    return g;
-  }
-  function armchair(){
-    const g=new THREE.Group();
-    soft(g,.82,.28,.78,.1,chairM,0,.16,0);
-    soft(g,.82,.6,.18,.08,chairM,0,.56,-.3);
-    soft(g,.16,.4,.78,.07,chairDk,-.33,.4,0);
-    soft(g,.16,.4,.78,.07,chairDk,.33,.4,0);
-    soft(g,.5,.12,.56,.05,violet,0,.34,.06);
-    for(const x of [-.3,.3]) for(const z of [-.3,.3]) cyl(g,.025,.02,.14,10,woodDk,x,.07,z);
-    return g;
-  }
-  function floorLamp(){
-    const g=new THREE.Group();
-    cyl(g,.16,.18,.03,28,metal,0,.015,0);
-    cyl(g,.016,.016,1.5,12,metal,0,.78,0);
-    const shade=new THREE.Mesh(new THREE.CylinderGeometry(.2,.28,.34,28,1,true),shadeMat);
-    shade.position.y=1.6; g.add(shade);
-    const bulb=new THREE.Mesh(new THREE.SphereGeometry(.07,14,10),new THREE.MeshBasicMaterial({color:0xfff4d8}));
-    bulb.position.y=1.5; g.add(bulb);
-    return g;
-  }
-
-  /* ---------- room shell: walls, trim, window, exit door ---------- */
-  const shell=new THREE.Group(); scene.add(shell);
-  const backWallTex=stripeTex(W/.8), sideWallTex=stripeTex(L/.8);
-  const backWallMat=M(0xffffff,.92,{map:backWallTex});
-  const sideWallMat=M(0xffffff,.92,{map:sideWallTex});
-  bx(shell,W,H,.1,backWallMat,0,H/2,-L/2);
-  bx(shell,.1,H,L,sideWallMat,-W/2,H/2,0);
-  // baseboards and crown
-  bx(shell,W,.1,.03,woodDk,0,.05,-L/2+.065);
-  bx(shell,.03,.1,L,woodDk,-W/2+.065,.05,0);
-  bx(shell,W,.08,.06,woodLt,0,H-.04,-L/2+.06);
-  bx(shell,.06,.08,L,woodLt,-W/2+.06,H-.04,0);
-
-  // window on the back wall, left of the exit
-  const glass=new THREE.Mesh(new THREE.PlaneGeometry(.9,1.0),new THREE.MeshBasicMaterial({map:skyTex()}));
-  glass.position.set(-1.4,1.55,-L/2+.06); shell.add(glass);
-  const wz=-L/2+.07;
-  bx(shell,.98,.05,.07,woodLt,-1.4,2.075,wz);
-  bx(shell,.98,.05,.07,woodLt,-1.4,1.025,wz);
-  bx(shell,.05,1.0,.07,woodLt,-1.875,1.55,wz);
-  bx(shell,.05,1.0,.07,woodLt,-.925,1.55,wz);
-  bx(shell,.03,1.0,.07,woodLt,-1.4,1.55,wz);
-  bx(shell,.9,.03,.07,woodLt,-1.4,1.55,wz);
-
-  // exit door: frame, glow behind it, and a leaf on a hinge that swings into the room
-  const exitGlowMat=new THREE.MeshBasicMaterial({color:0x29d8ff,transparent:true,opacity:.22});
-  const exitGlow=new THREE.Mesh(new THREE.PlaneGeometry(.9,2.0),exitGlowMat);
-  exitGlow.position.set(2.0,1.0,-L/2+.03); shell.add(exitGlow);
-  bx(shell,.06,2.12,.1,frameM,1.52,1.06,-L/2+.05);
-  bx(shell,.06,2.12,.1,frameM,2.48,1.06,-L/2+.05);
-  bx(shell,1.02,.06,.1,frameM,2.0,2.1,-L/2+.05);
-  const doorPivot=new THREE.Group(); doorPivot.position.set(1.55,0,-L/2+.07); shell.add(doorPivot);
-  soft(doorPivot,.9,2.0,.05,.02,doorM,.45,1.0,0);
-  soft(doorPivot,.6,.75,.02,.04,woodDk,.45,1.5,.035);
-  soft(doorPivot,.6,.7,.02,.04,woodDk,.45,.55,.035);
-  const knob=new THREE.Mesh(new THREE.SphereGeometry(.035,12,10),brass); knob.position.set(.8,1.0,.06); doorPivot.add(knob);
-
-  /* ---------- rug ---------- */
-  const rug=new THREE.Group();
-  const rugDisk=new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,.02,64),M(0x2b3173,.95));
-  rugDisk.receiveShadow=true; rug.add(rugDisk);
-  const rugRing=new THREE.Mesh(new THREE.RingGeometry(1.12,1.18,96),new THREE.MeshBasicMaterial({color:0x3fd3c0,transparent:true,opacity:.55,side:THREE.DoubleSide}));
-  rugRing.rotation.x=-Math.PI/2; rugRing.position.y=.012; rug.add(rugRing);
-
-  /* ---------- floor ---------- */
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(W,L),M(0xffffff,.75,{map:woodTex()}));
-  floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
-
-  /* ---------- placed pieces, each with a staggered build-in delay ---------- */
-  const pieces=[];
-  function addPiece(g,x,z,rot,delay){
-    g.position.set(x,0,z); g.rotation.y=rot; g.scale.setScalar(.001);
-    scene.add(g); pieces.push({g,delay}); return g;
-  }
-  const lampG=floorLamp();
-  addPiece(rug,.2,.6,0,.7);
-  addPiece(sofa(),-1.8,-.6,0,.95);
-  addPiece(table(),.2,.6,0,1.12);
-  addPiece(wardrobe(),-2.72,-1.9,Math.PI/2,1.28);
-  addPiece(armchair(),2.15,1.45,-2.14,1.46);
-  addPiece(plant(),2.55,1.95,0,1.62);
-  addPiece(lampG,-2.6,.9,0,1.8);
-
-  /* ---------- obstacles: amber crystals with a warning ring ---------- */
-  const obstacles=[[-.6,-1.4],[1.2,-.4]].map(([x,z])=>{
-    const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.16),M(0xf0a84a,.3,{emissive:0xf0a84a,emissiveIntensity:.6}));
-    gem.position.set(x,.7,z); gem.castShadow=true; scene.add(gem);
-    const warn=new THREE.Mesh(new THREE.RingGeometry(.22,.28,32),new THREE.MeshBasicMaterial({color:0xf0a84a,transparent:true,opacity:.7,side:THREE.DoubleSide}));
-    warn.rotation.x=-Math.PI/2; warn.position.set(x,.02,z); scene.add(warn);
-    return {gem,warn,x};
-  });
-
-  /* ---------- exit beacon, pulse ring and burst ring ---------- */
-  const beaconCol=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,1.6,24,1,true),new THREE.MeshBasicMaterial({color:0x29d8ff,transparent:true,opacity:.2,depthWrite:false,side:THREE.DoubleSide}));
-  beaconCol.position.set(2.0,.8,-L/2+.5); scene.add(beaconCol);
-  const exitRing=new THREE.Mesh(new THREE.RingGeometry(.3,.38,48),new THREE.MeshBasicMaterial({color:0x29d8ff,transparent:true,opacity:.85,side:THREE.DoubleSide,depthWrite:false}));
-  exitRing.rotation.x=-Math.PI/2; exitRing.position.set(2.0,.03,-L/2+.5); scene.add(exitRing);
-  const burstRing=new THREE.Mesh(new THREE.RingGeometry(.25,.32,64),new THREE.MeshBasicMaterial({color:0x8ff6ff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));
-  burstRing.rotation.x=-Math.PI/2; burstRing.position.set(2.0,.04,-L/2+.5); burstRing.visible=false; scene.add(burstRing);
-  const label=(()=>{
-    const lc=document.createElement('canvas'); lc.width=256; lc.height=64; const lg=lc.getContext('2d');
-    lg.fillStyle='rgba(12,15,38,.9)'; lg.fillRect(0,0,256,64);
-    lg.strokeStyle='rgba(143,246,255,.6)'; lg.lineWidth=3; lg.strokeRect(3,3,250,58);
-    lg.fillStyle='#8ff6ff'; lg.font='600 34px monospace'; lg.textAlign='center'; lg.textBaseline='middle'; lg.fillText('EXIT',128,34);
-    const m=new THREE.Mesh(new THREE.PlaneGeometry(.7,.18),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(lc),transparent:true}));
-    m.position.set(2.0,2.32,-L/2+.08); scene.add(m); return m;
-  })();
-
-  /* ---------- the route: draws itself on load, then pulses toward the exit ---------- */
-  const pts=[[-1.8,1.7],[-.6,1.2],[.9,1.2],[1.9,.2],[2.0,-1.0],[2.0,-L/2+.6]].map(([x,z])=>new THREE.Vector3(x,.06,z));
-  const curve=new THREE.CatmullRomCurve3(pts);
-  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,120,.045,10,false),new THREE.MeshStandardMaterial({color:0x1fc8ff,emissive:0x1fc8ff,emissiveIntensity:.5,roughness:.4,transparent:true,opacity:0}));
-  tube.visible=false; scene.add(tube);
-  const dots=[];
-  for(let i=0;i<40;i++){
-    const d=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),new THREE.MeshBasicMaterial({color:0x8ff6ff}));
-    curve.getPointAt(i/39,d.position); d.position.y=.06; d.visible=false; scene.add(d); dots.push(d);
-  }
-  const pulses=[0,.33,.66].map(o=>{
-    const m=new THREE.Mesh(new THREE.SphereGeometry(.1,14,10),new THREE.MeshBasicMaterial({color:0xffffff}));
-    m.visible=false; scene.add(m); return {m,o};
-  });
-  const you=new THREE.Mesh(new THREE.SphereGeometry(.13,20,16),M(0xffffff,.4,{emissive:0x8ea0ff,emissiveIntensity:.8}));
-  you.position.set(pts[0].x,.2,pts[0].z); scene.add(you);
-  const youRing=new THREE.Mesh(new THREE.RingGeometry(.2,.26,40),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.7,side:THREE.DoubleSide}));
-  youRing.rotation.x=-Math.PI/2; youRing.position.set(pts[0].x,.03,pts[0].z); scene.add(youRing);
-
-  /* scan sweep: a thin cyan slice that travels up through the room */
-  const scanMat=new THREE.MeshBasicMaterial({color:0x29d8ff,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false});
-  const scanMesh=new THREE.Mesh(new THREE.PlaneGeometry(W,L),scanMat);
-  scanMesh.rotation.x=-Math.PI/2; scanMesh.visible=false; scene.add(scanMesh);
-
-  function resize(){
-    const w=host.clientWidth,h=host.clientHeight;
-    renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix();
-  }
-  addEventListener('resize',resize); resize();
-
-  const target=new THREE.Vector3(.1,.9,-.8);
-  let px=0,py=0;
-  host.addEventListener('pointermove',e=>{const r=host.getBoundingClientRect(); px=(e.clientX-r.left)/r.width-.5; py=(e.clientY-r.top)/r.height-.5;});
-  host.addEventListener('pointerleave',()=>{px=0;py=0;});
-
-  const t0=performance.now();
-  let lastCyc=-1, burstT=-99;
-  function frame(now){
-    requestAnimationFrame(frame);
-    const t=reduce?20:(now-t0)/1000;
-
-    /* intro: shell rises, lamp warms, furniture settles in, window and door appear, route draws */
-    shell.scale.y=Math.max(.001,easeOut(prog(t,.15,1.1)));
-    lampLight.intensity=1.1*easeOut(prog(t,1.2,.9));
-    pieces.forEach(p=>{ p.g.scale.setScalar(Math.max(.001,easeBack(prog(t,p.delay,.9)))); });
-    glass.scale.y=Math.max(.001,easeOut(prog(t,1.5,.8)));
-    const drawP=easeInOut(prog(t,2.1,2.4));
-    tube.visible=drawP>.001; tube.material.opacity=.95*drawP;
-    dots.forEach((d,i)=>{ d.visible=(i/(dots.length-1))<=drawP; });
-    const done=drawP>=1;
-    pulses.forEach(p=>{ p.m.visible=done; if(done) curve.getPointAt((t*.13+p.o)%1,p.m.position); });
-
-    /* camera: dolly in and settle into the orbit */
-    const c=easeOut(prog(t,0,3.4));
-    const a=.85+Math.sin(t*.12)*.22+px*.35+(1-c)*1.6;
-    const R=9.2+(1-c)*5.5;
-    cam.position.set(target.x+Math.cos(a)*R, target.y+4.4-py*1.2+(1-c)*1.4, target.z+Math.sin(a)*R);
-    cam.lookAt(target);
-
-    /* each lap of the pulse swings the exit door open and sends a ring out */
-    const cyc=Math.floor(t*.13);
-    if(cyc!==lastCyc){ if(lastCyc!==-1&&t>3) burstT=t; lastCyc=cyc; }
-    const db=t-burstT;
-    const open=db<0?0:db<.5?easeInOut(db/.5):db<1.2?1:db<1.8?1-easeInOut((db-1.2)/.6):0;
-    doorPivot.rotation.y=-open*1.25;
-    exitGlowMat.opacity=.22+.3*open;
-    burstRing.visible=db>=0&&db<1.1;
-    if(burstRing.visible){ const s=1+db*3.2; burstRing.scale.set(s,s,1); burstRing.material.opacity=.9*(1-db/1.1); }
-
-    /* scan sweep, every 8 seconds, lighting up obstacles as it passes */
-    const sU=t>3.6?((t-3.6)%8)/2.6:2;
-    const scanOn=!reduce&&t>3.6&&sU<1;
-    scanMesh.visible=scanOn;
-    const scanY=sU*H;
-    if(scanOn){ scanMesh.position.y=scanY; scanMat.opacity=.22*Math.sin(Math.PI*sU); }
-    obstacles.forEach(o=>{
-      const near=scanOn?Math.max(0,1-Math.abs(scanY-.7)/.5):0;
-      o.gem.material.emissiveIntensity=.6+1.2*near;
-      o.warn.material.opacity=.7+.3*near;
-      o.gem.rotation.y=t*1.2;
-      o.gem.position.y=.7+.06*Math.sin(t*2+o.x);
-    });
-
-    /* idle pulses for the exit and the "you" marker */
-    const s=1+.22*Math.sin(t*2.6);
-    exitRing.scale.set(s,s,1); exitRing.material.opacity=.9-.45*(s-1)/.22;
-    youRing.scale.setScalar(1+.3*Math.sin(t*2.4));
-    beaconCol.rotation.y=t*.4;
-
-    renderer.render(scene,cam);
-  }
-  requestAnimationFrame(frame);
-})();
-</script>
-
-<script>
-/* Preview: real 3D. A glossy violet sphere on a reflective dark floor, with orbiting rings,
-   satellites and a particle field, all lit with shadows. If WebGL is unavailable the 2D scene stays. */
-(function(){
-  const cv=document.getElementById('orb3d');
-  if(!cv||typeof THREE==='undefined') return;
-  let r;
-  try{ r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true}); }catch(e){ return; }
-  window.__orb3dOK=true;
-  const fb=document.getElementById('orb2d'); if(fb) fb.style.display='none';
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  r.setPixelRatio(Math.min(devicePixelRatio||1,2));
-  r.shadowMap.enabled=true; r.shadowMap.type=THREE.PCFSoftShadowMap;
-  r.outputEncoding=THREE.sRGBEncoding;
-  r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.15;
-
-  const scene=new THREE.Scene();
-  scene.fog=new THREE.Fog(0x0c0f26,9,20);
-  const cam=new THREE.PerspectiveCamera(34,1,.1,60);
-
-  scene.add(new THREE.HemisphereLight(0xdfe6ff,0x1b1f4f,.9));
-  const key=new THREE.DirectionalLight(0xf4f0ff,2.2); key.position.set(-3.5,6,4.5); key.castShadow=true;
-  key.shadow.mapSize.set(1024,1024); key.shadow.radius=6; key.shadow.bias=-.0006;
-  Object.assign(key.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:20}); scene.add(key);
-  const rimL=new THREE.PointLight(0x8f7bff,3,12,1.6); rimL.position.set(3.5,2.5,-2.5); scene.add(rimL);
-  const rimR=new THREE.PointLight(0x3fd3c0,1.6,10,1.6); rimR.position.set(-4,1.5,2.5); scene.add(rimR);
-
-  /* reflective-looking dark floor with a soft teal ring */
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(7,96),new THREE.MeshStandardMaterial({color:0x14194a,roughness:.35,metalness:.5}));
-  floor.rotation.x=-Math.PI/2; floor.position.y=-1.6; floor.receiveShadow=true; scene.add(floor);
-  const glowRing=new THREE.Mesh(new THREE.RingGeometry(2.4,2.46,160),new THREE.MeshBasicMaterial({color:0x3fd3c0,transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}));
-  glowRing.rotation.x=-Math.PI/2; glowRing.position.y=-1.59; scene.add(glowRing);
-
-  /* the sphere: lacquered violet with a clearcoat, casting a soft shadow */
-  const sphereGroup=new THREE.Group(); scene.add(sphereGroup);
-  const sphere=new THREE.Mesh(new THREE.SphereGeometry(1.25,128,96),
-    new THREE.MeshPhysicalMaterial({color:0x8a70ff,roughness:.22,metalness:.05,clearcoat:1,clearcoatRoughness:.05,emissive:0x2a1a7a,emissiveIntensity:.35}));
-  sphere.castShadow=true; sphereGroup.add(sphere);
-
-  /* two orbit rings and three satellites riding them */
-  const ringMat=(c,o)=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o,depthWrite:false});
-  const ringA=new THREE.Mesh(new THREE.TorusGeometry(2.0,.008,12,320),ringMat(0xa8b4ff,.65));
-  ringA.rotation.set(1.15,0,.3); sphereGroup.add(ringA);
-  const ringB=new THREE.Mesh(new THREE.TorusGeometry(2.45,.006,12,320),ringMat(0x8f7bff,.4));
-  ringB.rotation.set(.45,.5,-.2); sphereGroup.add(ringB);
-  const sats=[ringA,ringB].map((ring,i)=>[0,1,2].map(k=>{
-    const s=new THREE.Mesh(new THREE.SphereGeometry(.07,16,12),new THREE.MeshBasicMaterial({color:i?0x3fd3c0:0xffffff}));
-    s.userData.ring=ring; s.userData.o=k*2.094; sphereGroup.add(s); return s;
-  })).flat();
-
-  /* particle field, a depth-layered snow drift around the sphere */
-  const N=900, pos=new Float32Array(N*3), seeds=new Float32Array(N);
-  for(let i=0;i<N;i++){
-    const u=Math.random()*2-1, th=Math.random()*Math.PI*2, s=Math.sqrt(1-u*u), rad=3+Math.random()*4;
-    pos[i*3]=Math.cos(th)*s*rad; pos[i*3+1]=u*rad*.7; pos[i*3+2]=Math.sin(th)*s*rad; seeds[i]=Math.random()*6.28;
-  }
-  const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const particles=new THREE.Points(pg,new THREE.PointsMaterial({color:0xd9ccff,size:.035,transparent:true,opacity:.8,depthWrite:false,sizeAttenuation:true}));
-  scene.add(particles);
-
-  function resize(){ const w=cv.clientWidth,h=cv.clientHeight; r.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }
-  addEventListener('resize',resize); resize();
-
-  let px=0,py=0;
-  cv.addEventListener('pointermove',e=>{ const b=cv.getBoundingClientRect(); px=(e.clientX-b.left)/b.width-.5; py=(e.clientY-b.top)/b.height-.5; });
-  cv.addEventListener('pointerleave',()=>{ px=0; py=0; });
-
-  const t0=performance.now();
-  function frame(now){
-    if(!reduce) requestAnimationFrame(frame);
-    const t=reduce?0:(now-t0)/1000;
-    const a=.5+Math.sin(t*.12)*.25+px*.6;
-    cam.position.set(Math.sin(a)*6.4, 1.6-py*1.0+Math.sin(t*.2)*.15, Math.cos(a)*6.4);
-    cam.lookAt(0,-.2,0);
-    sphereGroup.position.y=.4+Math.sin(t*.7)*.12;
-    sphere.rotation.y=t*.25;
-    ringA.rotation.z=t*.18; ringB.rotation.z=-t*.12;
-    for(const s of sats){ const ang=s.userData.o+t*(s.userData.ring===ringA?.5:-.35); const rr=s.userData.ring===ringA?2.0:2.45; s.position.set(Math.cos(ang)*rr,0,Math.sin(ang)*rr); }
-    particles.rotation.y=t*.03;
-    glowRing.material.opacity=.25+.12*Math.sin(t*1.3);
-    r.render(scene,cam);
-  }
-  requestAnimationFrame(frame);
-})();
-</script>
-<script>
-/* Preview scene: a glossy violet sphere that floats, turns, and carries a moving highlight,
-   with an orbit ring circling it and snow falling past. Plain 2D canvas, so it always draws. */
-(function(){
-  const cv=document.getElementById('orb2d');
-  if(!cv) return;
-  const g=cv.getContext('2d');
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let w=0,h=0,dpr=1,flakes=[],stars=[];
-  function size(){
-    dpr=Math.min(devicePixelRatio||1,2);
-    w=cv.clientWidth; h=cv.clientHeight;
-    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
-    g.setTransform(dpr,0,0,dpr,0,0);
-    flakes=Array.from({length:Math.round(Math.min(140,Math.max(50,w*h/3200)))},()=>make(true));
-    stars=Array.from({length:150},()=>({x:Math.random(),y:Math.random(),z:Math.random(),tw:Math.random()*6.28}));
-  }
-  function make(anywhere){
-    const z=Math.random();
-    return {x:Math.random()*w, y:anywhere?Math.random()*h:-8, r:.5+z*2.2, v:16+z*44,
-      sway:.4+Math.random()*.9, phase:Math.random()*Math.PI*2, a:.45+z*.5};
-  }
-  /* pointer: the sphere leans toward the cursor */
-  let px=0,py=0;
-  cv.addEventListener('pointermove',e=>{ const r=cv.getBoundingClientRect(); px=(e.clientX-r.left)/r.width-.5; py=(e.clientY-r.top)/r.height-.5; });
-  cv.addEventListener('pointerleave',()=>{ px=0; py=0; });
-
-  function drawSphere(cx,cy,R,t){
-    // halo breathes slightly
-    const pulse=1+.03*Math.sin(t*1.4);
-    const halo=g.createRadialGradient(cx,cy,R*.9,cx,cy,R*2.1*pulse);
-    halo.addColorStop(0,'rgba(124,92,240,.45)'); halo.addColorStop(1,'rgba(124,92,240,0)');
-    g.fillStyle=halo; g.fillRect(cx-R*2.4,cy-R*2.4,R*4.8,R*4.8);
-
-    // body: the highlight travels across the surface and the terminator shifts with it
-    const hx=Math.cos(t*.28)*.36+px*.5, hy=-.4+Math.sin(t*.37)*.1+py*.4;
-    const body=g.createRadialGradient(cx+R*hx,cy+R*hy,R*.05,cx,cy,R);
-    body.addColorStop(0,'#f4efff'); body.addColorStop(.18,'#c4b2ff'); body.addColorStop(.5,'#8a70ff');
-    body.addColorStop(.82,'#3f3fb8'); body.addColorStop(1,'#1a1a52');
-    g.beginPath(); g.arc(cx,cy,R,0,Math.PI*2); g.fillStyle=body; g.fill();
-
-    // a second, softer sheen drifting in the opposite direction, so the surface looks alive
-    const sx=Math.cos(t*.2+2)*.5, sy=Math.sin(t*.23+1)*.4;
-    const sheen=g.createRadialGradient(cx+R*sx,cy+R*sy,0,cx+R*sx,cy+R*sy,R*.5);
-    sheen.addColorStop(0,'rgba(220,210,255,.18)'); sheen.addColorStop(1,'rgba(220,210,255,0)');
-    g.save(); g.beginPath(); g.arc(cx,cy,R,0,Math.PI*2); g.clip(); g.fillStyle=sheen; g.fillRect(cx-R,cy-R,2*R,2*R); g.restore();
-
-    // rim light
-    g.beginPath(); g.arc(cx,cy,R-.5,Math.PI*.9,Math.PI*1.75);
-    g.strokeStyle='rgba(185,166,255,.55)'; g.lineWidth=1.5; g.stroke();
-
-    // two orbit rings turning at different speeds, one in front and one behind
-    const orbit=(ang,scale,alpha,front)=>{
-      g.save(); g.translate(cx,cy); g.rotate(ang); g.scale(1,scale);
-      g.beginPath(); g.arc(0,0,R*1.55,0,Math.PI*2);
-      g.strokeStyle='rgba(168,180,255,'+alpha+')'; g.lineWidth=1.2/scale; g.stroke(); g.restore();
-    };
-    orbit(-.35+t*.25,.28,.5,false);
-    orbit(1.1-t*.16,.22,.3,false);
-  }
-  /* live backdrop: a perspective floor that flows toward the viewer, a parallax starfield,
-     and a slow light sweep. Everything moves, so the panel never reads as empty. */
-  function drawBackdrop(t){
-    const horizon=h*.6;
-    // light sweep: a soft diagonal band moving across
-    const sx=((t*.06)%1.6-.3)*w;
-    const beam=g.createLinearGradient(sx-w*.25,0,sx+w*.25,h);
-    beam.addColorStop(0,'rgba(143,246,255,0)'); beam.addColorStop(.5,'rgba(143,246,255,.07)'); beam.addColorStop(1,'rgba(143,246,255,0)');
-    g.fillStyle=beam; g.fillRect(0,0,w,h);
-    // stars, nearer ones drift faster
-    for(const s of stars){
-      const d=.2+s.z*.8;
-      const x=((s.x - t*.012*d)%1+1)%1*w, y=s.y*horizon;
-      const tw=.35+.35*Math.sin(t*1.6+s.tw);
-      g.fillStyle='rgba(220,226,255,'+(tw*d*.9).toFixed(3)+')';
-      g.beginPath(); g.arc(x,y,.4+d*1.1,0,Math.PI*2); g.fill();
-    }
-    // perspective floor: grid lines converge at the horizon
-    g.lineWidth=1;
-    for(let i=0;i<14;i++){
-      const u=((i/14)+t*.09)%1, y=horizon+(h-horizon)*u*u;
-      g.strokeStyle='rgba(142,160,255,'+(.05+.3*u*u).toFixed(3)+')';
-      g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke();
-    }
-    for(let j=-9;j<=9;j++){
-      const bx=w*.5+j*w*.13;
-      g.strokeStyle='rgba(142,160,255,'+(.12-Math.abs(j)*.006).toFixed(3)+')';
-      g.beginPath(); g.moveTo(w*.5,horizon); g.lineTo(bx*1.0+(w*.5-bx)*0,h); g.stroke();
-    }
-    // soft horizon glow
-    const hg=g.createLinearGradient(0,horizon-h*.12,0,horizon+h*.05);
-    hg.addColorStop(0,'rgba(124,92,240,0)'); hg.addColorStop(.6,'rgba(124,92,240,.18)'); hg.addColorStop(1,'rgba(124,92,240,0)');
-    g.fillStyle=hg; g.fillRect(0,horizon-h*.12,w,h*.17);
-  }
-  function frame(now){
-    if(!reduce) requestAnimationFrame(frame);
-    const t=reduce?0:now/1000;
-    g.clearRect(0,0,w,h);
-    const bg=g.createRadialGradient(w*.5,h*.5,0,w*.5,h*.5,Math.max(w,h)*.6);
-    bg.addColorStop(0,'rgba(60,52,140,.35)'); bg.addColorStop(1,'rgba(12,15,38,0)');
-    g.fillStyle=bg; g.fillRect(0,0,w,h);
-    drawBackdrop(t);
-
-    // the sphere floats: a slow bob and a gentle drift
-    const R=Math.min(w,h)*.27;
-    const cx=w*.5+Math.sin(t*.55)*w*.025+px*w*.03;
-    const cy=h*.5+Math.sin(t*.9)*h*.03+py*h*.03;
-    drawSphere(cx,cy,R,t);
-
-    // snow in front of the sphere
-    const dt=reduce?0:Math.min(.05,(now-(frame.last||now))/1000); frame.last=now;
-    for(const f of flakes){
-      if(!reduce){
-        f.phase+=dt*f.sway; f.y+=f.v*dt; f.x+=Math.sin(f.phase)*12*dt*f.sway;
-        if(f.y>h+6||f.x<-10||f.x>w+10){ Object.assign(f,make(false)); f.x=Math.random()*w; }
-      }
-      g.beginPath(); g.fillStyle='rgba(240,243,255,'+f.a.toFixed(3)+')';
-      g.arc(f.x,f.y,f.r,0,Math.PI*2); g.fill();
-    }
-  }
-  addEventListener('resize',()=>{ size(); if(reduce) frame(0); });
-  size(); requestAnimationFrame(frame);
-})();
-</script>
-<script>
-/*SPACE*/
-</script>
-<script>
-/* Space scene: a starfield drifting past, and a black hole with a glowing accretion disk,
-   gravitational photon ring and lensed halo. Fixed behind the content; still under reduced motion. */
-(function(){
-  const cv=document.getElementById('space'); if(!cv) return;
-  const g=cv.getContext('2d');
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const dpr=Math.min(devicePixelRatio||1,1.5);
-  let w,h,stars=[],disk=[];
-  const TAU=Math.PI*2;
-  function size(){
-    w=innerWidth; h=innerHeight;
-    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
-    g.setTransform(dpr,0,0,dpr,0,0);
-    stars=Array.from({length:Math.round(Math.min(520,Math.max(160,w*h/2600)))},()=>({
-      x:Math.random(), y:Math.random(), z:Math.random(), tw:Math.random()*TAU,
-      c:Math.random()<.15?'255,214,170':(Math.random()<.2?'170,200,255':'235,240,255')
-    }));
-    disk=Array.from({length:1100},()=>{
-      const r=Math.pow(Math.random(),.6);           // more particles near the inner edge
-      return {r, a:Math.random()*TAU, s:(.5+Math.random()*.5), h:Math.random()};
-    });
-  }
-  function hole(){
-    return {cx:w>900?w*.7:w*.5, cy:h*.46, R:Math.min(w,h)*(w>900?.13:.1)};
-  }
-  function drawStars(t){
-    for(const s of stars){
-      const d=.15+s.z*.85;
-      const x=((s.x - t*.004*d)%1+1)%1*w, y=s.y*h;
-      const tw=.55+.45*Math.sin(t*1.3+s.tw);
-      g.fillStyle='rgba('+s.c+','+(tw*d*.95).toFixed(3)+')';
-      const r=.35+d*.9;
-      g.fillRect(x,y,r,r);
-    }
-  }
-  function drawDisk(H,t,front){
-    const {cx,cy,R}=H;
-    for(const p of disk){
-      const ang=p.a;
-      const isFront=Math.sin(ang)>0;
-      if(isFront!==front) continue;
-      const rr=R*(1.25+p.r*2.2);
-      // inner particles orbit faster
-      const spd=(.9/Math.pow(p.r*2.2+.6,1.5))*p.s;
-      p.a+=spd*.012;
-      const x=cx+Math.cos(p.a)*rr, y=cy+Math.sin(p.a)*rr*.26;
-      // Doppler: the side moving toward us is brighter
-      const dop=.45+.55*(.5-.5*Math.cos(p.a));
-      const warm=p.r<.5;
-      const col=warm?'255,190,120':'255,140,90';
-      g.fillStyle='rgba('+col+','+(dop*(1-p.r*.6)*.85).toFixed(3)+')';
-      const sz=.7+(1-p.r)*1.1;
-      g.fillRect(x,y,sz,sz);
-    }
-  }
-  function frame(now){
-    if(!reduce) requestAnimationFrame(frame);
-    const t=reduce?0:now/1000;
-    g.clearRect(0,0,w,h);
-    drawStars(t);
-    const H=hole(), {cx,cy,R}=H;
-
-    /* soft warm glow of the disk plane */
-    const glow=g.createRadialGradient(cx,cy,R*.9,cx,cy,R*3.2);
-    glow.addColorStop(0,'rgba(255,150,90,.20)'); glow.addColorStop(.35,'rgba(255,110,70,.07)'); glow.addColorStop(1,'rgba(255,110,70,0)');
-    g.fillStyle=glow; g.fillRect(cx-R*3.2,cy-R*3.2,R*6.4,R*6.4);
-
-    drawDisk(H,t,false);                       // back of the disk, behind the hole
-
-    /* event horizon: pure black */
-    g.beginPath(); g.arc(cx,cy,R,0,TAU); g.fillStyle='#000'; g.fill();
-
-    /* photon ring: light bent around the hole */
-    g.save(); g.translate(cx,cy); g.scale(1,.94);
-    g.beginPath(); g.arc(0,0,R*1.06,0,TAU);
-    g.shadowColor='rgba(255,170,110,.9)'; g.shadowBlur=R*.35;
-    g.strokeStyle='rgba(255,226,190,.95)'; g.lineWidth=Math.max(1.5,R*.035); g.stroke();
-    g.shadowBlur=0;
-    g.beginPath(); g.arc(0,0,R*1.22,0,TAU);
-    g.strokeStyle='rgba(120,160,255,.22)'; g.lineWidth=R*.12; g.stroke();
-    g.restore();
-
-    drawDisk(H,t,true);                        // front of the disk, over the hole
-
-    /* lensed halo arc on the top of the hole */
-    g.save(); g.translate(cx,cy); g.rotate(-.2);
-    g.beginPath(); g.ellipse(0,-R*.2,R*1.5,R*1.1,0,Math.PI*1.1,Math.PI*1.9);
-    g.strokeStyle='rgba(255,200,150,.16)'; g.lineWidth=R*.05; g.stroke(); g.restore();
-  }
-  let rt; addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(()=>{ size(); if(reduce) frame(0); },120); });
-  size(); requestAnimationFrame(frame);
-})();
-</script>
+<script src="script.js"></script>
 </body>
 </html>
