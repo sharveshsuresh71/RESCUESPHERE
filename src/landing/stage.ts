@@ -47,6 +47,7 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.setClearColor(0x000000, 0);
+  renderer.autoClear = false;
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -142,15 +143,21 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
     renderer.setScissorTest(true);
 
     for (const v of views) {
-      v.a += ((v.visible ? 1 : 0) - v.a) * (1 - Math.exp(-dt * (v.visible ? 2.4 : 3.2)));
+      const want = v.visible && v.el.closest('[data-off]') === null;
+      v.a += ((want ? 1 : 0) - v.a) * (1 - Math.exp(-dt * (want ? 2.2 : 3.4)));
       if (v.a < 0.002) continue;
       const r = v.el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > H) continue;
 
-      const x = r.left, y = H - r.bottom;
-      renderer.setViewport(x, y, r.width, r.height);
-      renderer.setScissor(x, y, r.width, r.height);
+      // Render a padded area around the slot so parts that drift past its edge are not cut off.
+      // The view offset keeps the model at the same scale as the slot itself.
+      const pad = Math.min(r.width, r.height) * 0.4;
+      const pw = r.width + pad * 2, ph = r.height + pad * 2;
+      const x = r.left - pad, y = H - (r.bottom + pad);
+      renderer.setViewport(x, y, pw, ph);
+      renderer.setScissor(x, y, pw, ph);
       v.cam.aspect = r.width / r.height;
+      v.cam.setViewOffset(r.width, r.height, -pad, -pad, pw, ph);
       v.cam.updateProjectionMatrix();
       v.cam.position.set(v.spec.camPos[0], v.spec.camPos[1], v.spec.camPos[2]);
       v.cam.lookAt(v.spec.camLook[0], v.spec.camLook[1], v.spec.camLook[2]);

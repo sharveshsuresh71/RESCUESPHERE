@@ -5,7 +5,7 @@
  * on :root, which the hero and the pinned section both read). The name rises letter by letter.
  */
 
-const REVEAL_MS = 620;
+const REVEAL_MS = 900;
 const AUTOPLAY_MS = 3200;
 
 function easeInOut(t: number): number {
@@ -90,7 +90,7 @@ export function initReel(reduced: boolean): void {
     const it = items[idx];
     if (!it) return;
     active = idx;
-    items.forEach((el, j) => { el.hidden = j !== idx; });
+    items.forEach((el, j) => { el.toggleAttribute('data-off', j !== idx); });
     splitTitle(it.dataset.name ?? '');
     subEl.textContent = it.dataset.sub ?? '';
     countEl.textContent = String(idx + 1).padStart(2, '0');

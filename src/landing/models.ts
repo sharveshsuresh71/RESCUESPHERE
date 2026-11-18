@@ -43,20 +43,22 @@ function easeOut(u: number): number { return 1 - Math.pow(1 - u, 3); }
 
 /** Assembles parts: each starts scattered and moves to its home position as p goes 0 → 1. */
 class Parts {
-  private readonly items: { obj: THREE.Object3D; home: THREE.Vector3; away: THREE.Vector3; rank: number }[] = [];
+  private readonly items: { obj: THREE.Object3D; home: THREE.Vector3; away: THREE.Vector3; rank: number; base: THREE.Vector3 }[] = [];
   add<T extends THREE.Object3D>(obj: T): T {
     const i = this.items.length;
     const seed = Math.sin(i * 127.1 + 311.7) * 43758.5453;
     const f = seed - Math.floor(seed);
-    const dir = new THREE.Vector3(Math.sin(f * 6.283), 0.7 + f * 0.6, Math.cos(f * 6.283)).normalize().multiplyScalar(2.4);
+    const dir = new THREE.Vector3(Math.sin(f * 6.283), 0.7 + f * 0.6, Math.cos(f * 6.283)).normalize().multiplyScalar(1.0);
     const home = obj.position.clone();
-    this.items.push({ obj, home, away: home.clone().add(dir), rank: i });
+    this.items.push({ obj, home, away: home.clone().add(dir), rank: i, base: obj.scale.clone() });
     return obj;
   }
   set(p: number): void {
     for (const it of this.items) {
       const k = clamp01(p * 1.45 - it.rank * 0.012);
-      it.obj.position.lerpVectors(it.away, it.home, easeOut(k));
+      const e = easeOut(k);
+      it.obj.position.lerpVectors(it.away, it.home, e);
+      it.obj.scale.copy(it.base).multiplyScalar(0.55 + 0.45 * e);
     }
   }
 }

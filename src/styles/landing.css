@@ -246,7 +246,7 @@ main{position:relative;z-index:1}
 .rf-rv{position:absolute;inset:0;z-index:1;pointer-events:none;clip-path:circle(0px at 50% 50%)}
 .rf-stage{position:absolute;inset:0;touch-action:pan-y}
 .rf-item{position:absolute;inset:0}
-.rf-item[hidden]{display:none}
+.rf-item[data-off]{pointer-events:none}
 .rf-item .slot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,70vh,720px);height:min(80vh,780px)}
 
 .rf-kicker{position:absolute;z-index:3;top:26px;left:28px;margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}

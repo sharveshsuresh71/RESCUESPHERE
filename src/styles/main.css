@@ -890,3 +890,61 @@ button:disabled { opacity: 0.5; cursor: wait; transform: none; }
   .assistant { left: 12px; right: 12px; bottom: 12px; max-width: none; }
   .assist-bubble { font-size: 13px; }
 }
+
+/* ===== Polish pass (v2): contained top bar, clean panel space, refined type and motion ===== */
+
+/* top bar wraps instead of pushing content past the window edge */
+.workspace-topbar { flex-wrap: wrap; min-height: auto; padding: 16px 28px; row-gap: 12px; }
+.workspace-title { font-size: 28px; }
+.topbar-actions { flex-wrap: wrap; justify-content: flex-end; gap: 12px 16px; min-width: 0; }
+.live-pill, .exit-link { white-space: nowrap; }
+.exit-link { font-size: 13px; }
+.progress-ring .ring-fg { transition: stroke-dashoffset 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+
+/* scene labels stay on one line and never run off the stage */
+.scene-label, .scene-legend { white-space: nowrap; }
+.scene-legend { max-width: calc(100% - 380px); overflow: hidden; }
+
+/* leave room at the bottom for the desktop 3D and Mixed Reality controls */
+#module-host { height: calc(100% - 56px - 120px); }
+
+/* calmer, more editorial panel */
+.spatial-panel {
+  padding: 34px 36px;
+  border-radius: 24px;
+  background-color: rgba(20, 25, 64, 0.8);
+}
+.spatial-panel h1 { font-size: clamp(34px, 3.6vw, 46px); letter-spacing: -0.025em; }
+.spatial-panel > p, .spatial-panel p { color: #c9cfee; font-size: 16px; line-height: 1.6; }
+.spatial-panel h2 { font-size: 10.5px; letter-spacing: 0.18em; }
+
+/* refined buttons: softer lift, luminous primary */
+button { transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease; }
+button.primary,
+.spatial-panel button.primary {
+  background: linear-gradient(180deg, #f5f7ff, #dde4ff);
+  border-color: transparent;
+  color: #0c0f26;
+  box-shadow: 0 10px 28px rgba(142, 160, 255, 0.28);
+}
+button.primary:hover,
+button.primary:focus-visible {
+  background: linear-gradient(180deg, #ffffff, #c9d2ff);
+  border-color: transparent;
+  color: #0c0f26;
+  box-shadow: 0 14px 34px rgba(142, 160, 255, 0.4);
+}
+
+/* plan editor: dark studio grid instead of a white sheet */
+.plan-editor {
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 24px 24px,
+    rgba(8, 11, 30, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* softer ambient light so it never competes with the panel */
+.orb { opacity: 0.45; }
