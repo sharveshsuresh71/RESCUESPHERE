@@ -35,6 +35,7 @@ interface SlotView {
   hover: number;
   tapLock: boolean;
   moved: boolean;
+  offPrev: boolean;
 }
 
 function easeOut(u: number): number { return 1 - Math.pow(1 - u, 3); }
@@ -86,7 +87,7 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
       el, spec, scene, pivot,
       cam: new THREE.PerspectiveCamera(32, 1, 0.1, 80),
       rotX: 0, rotY: 0, panX: 0, panY: 0,
-      visible: false, a: 0, drag: 'none', lx: 0, ly: 0, hoverT: 0, hover: 0, tapLock: false, moved: false
+      visible: false, a: 0, drag: 'none', lx: 0, ly: 0, hoverT: 0, hover: 0, tapLock: false, moved: false, offPrev: false
     };
     views.push(view);
 
@@ -159,7 +160,12 @@ export function startStage(canvas: HTMLCanvasElement, slotEls: HTMLElement[], re
     renderer.setScissorTest(true);
 
     for (const v of views) {
-      const want = v.visible && v.el.closest('[data-off]') === null;
+      const off = v.el.closest('[data-off]') !== null;
+      if (off !== v.offPrev) {
+        v.offPrev = off;
+        if (off) { v.hoverT = 0; v.tapLock = false; }
+      }
+      const want = v.visible && !off;
       v.a += ((want ? 1 : 0) - v.a) * (1 - Math.exp(-dt * (want ? 2.2 : 3.4)));
       if (v.a < 0.002) continue;
       const r = v.el.getBoundingClientRect();
